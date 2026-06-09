@@ -188,6 +188,38 @@ input[type=number]:focus { outline: 2px solid var(--gold); }
   40%, 60% { transform: translateX(4px); }
 }
 
+/* Betting countdown — thin bar pinned to bottom of the stage */
+.countdown {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 4px;
+  background: rgba(255,255,255,0.06);
+}
+.countdown-bar {
+  height: 100%;
+  background: var(--gold);
+  width: 100%;
+  transform-origin: left center;
+  transition: transform 100ms linear;
+  box-shadow: 0 0 12px rgba(243,176,61,0.5);
+}
+
+/* History chip pop-in when a new round lands */
+@keyframes chipPop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  60%  { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.chip.new { animation: chipPop 320ms cubic-bezier(.4,2,.6,1); }
+
+/* Milestone pulse on the multiplier number */
+@keyframes mPulse {
+  0%   { text-shadow: 0 0 0 rgba(243,176,61,0); transform: scale(1); }
+  40%  { text-shadow: 0 0 28px rgba(243,176,61,0.7); transform: scale(1.07); }
+  100% { text-shadow: 0 0 0 rgba(243,176,61,0); transform: scale(1); }
+}
+.multiplier.pulse { animation: mPulse 420ms ease-out; }
+
 /* ── Bet panels ──────────────────────────────────────────────────── */
 
 .bets {

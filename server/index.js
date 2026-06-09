@@ -126,11 +126,27 @@ wss.on('connection', (ws, req) => {
     }
   });
 
-  ws.on('close', () => {
+  const cleanup = () => {
+    if (ws._cleaned) return;
+    ws._cleaned = true;
     realClients.delete(ws);
     game.unregisterPlayer(ws.playerId);
-  });
+  };
+  ws.on('close', cleanup);
+  ws.on('error', cleanup);
 });
+
+// Periodically prune sockets that died without sending close (e.g. clients
+// that crashed or were killed). ws's built-in heartbeat would do this more
+// rigorously; for a demo, scanning on each interval is plenty.
+setInterval(() => {
+  for (const ws of realClients) {
+    if (ws.readyState !== ws.OPEN && ws.readyState !== ws.CONNECTING) {
+      realClients.delete(ws);
+      game.unregisterPlayer(ws.playerId);
+    }
+  }
+}, 10_000);
 
 function handleClientMessage(ws, msg) {
   const pid = ws.playerId;

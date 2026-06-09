@@ -219,7 +219,7 @@ function onBust(msg) {
 function onHistory(msg) {
   state.history.unshift(msg.round);
   if (state.history.length > 20) state.history.length = 20;
-  renderHistory();
+  renderHistory({ popLatest: true });
 }
 
 function onBalance(msg) {
@@ -250,17 +250,17 @@ function chipClass(crashPoint, escaped) {
   return 'chip red';
 }
 
-function renderHistory() {
+function renderHistory({ popLatest = false } = {}) {
   const strip = $('#history-strip');
   strip.replaceChildren();
-  for (const r of state.history) {
+  state.history.forEach((r, i) => {
     const el = document.createElement('button');
-    el.className = chipClass(r.crashPoint, r.escaped);
+    el.className = chipClass(r.crashPoint, r.escaped) + (popLatest && i === 0 ? ' new' : '');
     el.textContent = `${r.crashPoint.toFixed(2)}x`;
     el.title = `Round #${r.nonce}`;
     el.addEventListener('click', () => showChipDetail(r));
     strip.appendChild(el);
-  }
+  });
 }
 
 // ── Render: bet panels ───────────────────────────────────────────────
@@ -278,7 +278,17 @@ function renderBets() {
 
     place.textContent = bet ? 'Placed' : `Place ${stakeIn.value || 0}`;
     place.disabled = !!bet || !isBetting;
-    cash.disabled = !bet || bet.status !== 'placed' || !isFlying;
+
+    // Cash-out button shows projected payout in real time — genre standard.
+    const canCash = !!bet && bet.status === 'placed' && isFlying;
+    cash.disabled = !canCash;
+    if (canCash) {
+      cash.textContent = `Cash Out ${(bet.stake * state.multiplier).toFixed(2)}`;
+    } else if (bet?.status === 'cashed') {
+      cash.textContent = `Cashed +${(bet.payout - bet.stake).toFixed(2)}`;
+    } else {
+      cash.textContent = 'Cash Out';
+    }
 
     if (!bet) {
       status.textContent = isBetting ? 'ready' : 'idle';
@@ -530,6 +540,20 @@ async function verifyRound(r) {
 // ── Render loop (60fps) ──────────────────────────────────────────────
 
 const scene = createScene($('#scene'));
+let lastMilestoneCrossed = 0;
+
+function maybeMilestonePulse(m) {
+  const milestones = [2, 5, 10, 25, 50, 100];
+  let crossed = 0;
+  for (const ms of milestones) if (m >= ms) crossed = ms; else break;
+  if (crossed > lastMilestoneCrossed) {
+    lastMilestoneCrossed = crossed;
+    const el = $('#multiplier');
+    el.classList.remove('pulse');
+    void el.offsetWidth; // restart animation
+    el.classList.add('pulse');
+  }
+}
 
 function renderLoop() {
   // Smoothly interpolate the multiplier between server ticks for flicker-free read.
@@ -554,15 +578,26 @@ function renderLoop() {
     mEl.textContent = `${mult}x`;
   }
 
-  // Betting countdown sub-label.
+  // Betting countdown sub-label + bottom bar.
+  const cdEl  = $('#countdown');
+  const cdBar = $('#countdown-bar');
   if (state.phase === 'betting') {
+    const total = Math.max(1, state.phaseEndsAt - state.phaseStartedAt);
     const remaining = Math.max(0, state.phaseEndsAt - (Date.now() + state.serverClockSkew));
     $('#phase-sub').textContent = `Round starts in ${(remaining / 1000).toFixed(1)}s`;
-  } else if (performance.now() < lastResultUntil) {
-    $('#phase-sub').textContent = lastResultText;
+    cdEl.hidden = false;
+    cdBar.style.transform = `scaleX(${remaining / total})`;
+    lastMilestoneCrossed = 0; // reset milestone tracker for next round
   } else {
-    $('#phase-sub').textContent = '';
+    if (performance.now() < lastResultUntil) {
+      $('#phase-sub').textContent = lastResultText;
+    } else {
+      $('#phase-sub').textContent = '';
+    }
+    cdEl.hidden = true;
   }
+
+  if (state.phase === 'flying') maybeMilestonePulse(m);
 
   // Update PLACED slot status in real time so the player sees "stake × m" climbing.
   if (state.phase === 'flying') renderBets();
