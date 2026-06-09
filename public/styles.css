@@ -349,6 +349,10 @@ input[type=number]:focus { outline: 2px solid var(--gold); }
   z-index: 100;
   padding: 16px;
 }
+/* `.modal { display: flex }` overrides the UA `[hidden] { display: none }`
+   default at equal specificity. Force it back so el.hidden=true works. */
+.modal[hidden] { display: none; }
+#chip-modal { z-index: 110; }   /* chip detail always above the fair modal */
 .modal-card {
   background: var(--bg-1);
   border: 1px solid var(--line);

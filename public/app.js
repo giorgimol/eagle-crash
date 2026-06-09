@@ -431,8 +431,28 @@ $('#open-fair').addEventListener('click', () => {
   populateFairModal();
   $('#fair-modal').hidden = false;
 });
-$('#close-fair').addEventListener('click', () => { $('#fair-modal').hidden = true; });
-$('#close-chip').addEventListener('click', () => { $('#chip-modal').hidden = true; });
+
+function closeModal(modal) { modal.hidden = true; }
+
+// X-button closes
+$('#close-fair').addEventListener('click', () => closeModal($('#fair-modal')));
+$('#close-chip').addEventListener('click', () => closeModal($('#chip-modal')));
+
+// Click on the dark backdrop (anywhere outside the card) dismisses.
+for (const m of [$('#fair-modal'), $('#chip-modal')]) {
+  m.addEventListener('click', (e) => {
+    if (e.target === m) closeModal(m);
+  });
+}
+
+// ESC dismisses the topmost open modal (chip first since it stacks above).
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const chip = $('#chip-modal');
+  const fair = $('#fair-modal');
+  if (!chip.hidden) closeModal(chip);
+  else if (!fair.hidden) closeModal(fair);
+});
 
 $('#verify-last').addEventListener('click', async () => {
   const last = state.history[0];
