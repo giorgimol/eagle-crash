@@ -3,28 +3,34 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-    <meta name="theme-color" content="#0b1020" />
+    <meta name="theme-color" content="#050720" />
     <title>Eagle Crash</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
     <div id="app">
-      <!-- ── Top bar: history strip + balance + provably-fair button ── -->
+      <!-- ── Top bar ── -->
       <header class="topbar">
+        <div class="brand"><span class="dot"></span>EAGLE</div>
         <div class="history-strip" id="history-strip" aria-label="Recent crash points">
           <!-- chips injected by JS -->
         </div>
         <div class="topbar-right">
-          <button id="open-fair" class="ghost-btn" type="button" title="Provably Fair">⚖️ Fair</button>
-          <div class="balance" id="balance" aria-label="Balance">1000.00</div>
+          <button id="open-fair" class="icon-btn" type="button" title="Provably Fair" aria-label="Provably Fair">⚖</button>
+          <div class="balance" id="balance" aria-label="Balance">
+            <span class="coin" aria-hidden="true"></span>
+            <span id="balance-value">1000.00</span>
+          </div>
         </div>
       </header>
 
-      <!-- ── Scene: canvas + big multiplier overlay ── -->
+      <!-- ── Scene ── -->
       <section class="stage">
         <canvas id="scene" width="800" height="500" aria-hidden="true"></canvas>
         <div class="stage-overlay">
-          <div class="phase-label" id="phase-label">Connecting…</div>
+          <div class="phase-label" id="phase-label" data-phase="connecting">Connecting…</div>
           <div class="multiplier" id="multiplier">1.00x</div>
           <div class="phase-sub" id="phase-sub"></div>
         </div>
@@ -37,15 +43,23 @@
       <section class="bets">
         <div class="bet-slot" data-slot="A">
           <div class="bet-head">
-            <span class="bet-title">Bet A</span>
-            <span class="bet-status" id="status-A">—</span>
+            <span class="bet-title">★ Bet A</span>
+            <span class="bet-status" id="status-A">ready</span>
           </div>
           <div class="bet-row">
-            <input class="bet-stake" id="stake-A" type="number" inputmode="decimal" min="1" max="500" step="1" value="10" />
+            <input class="bet-stake" id="stake-A" type="number" inputmode="decimal" min="1" max="500" step="1" value="10" aria-label="Bet A stake" />
             <div class="bet-quick">
-              <button data-stake-step="A" data-mult="0.5" type="button">½</button>
-              <button data-stake-step="A" data-mult="2"   type="button">2×</button>
+              <button data-stake-step="A" data-mult="0.5" type="button" aria-label="Halve">½</button>
+              <button data-stake-step="A" data-mult="2"   type="button" aria-label="Double">2×</button>
             </div>
+          </div>
+          <div class="preset-row" data-presets="A">
+            <button type="button" data-preset="1">1</button>
+            <button type="button" data-preset="5">5</button>
+            <button type="button" data-preset="10">10</button>
+            <button type="button" data-preset="25">25</button>
+            <button type="button" data-preset="50">50</button>
+            <button type="button" data-preset="100">100</button>
           </div>
           <div class="bet-action">
             <button class="place" id="place-A" type="button">Place 10</button>
@@ -61,17 +75,26 @@
             <span>Auto bet</span>
           </label>
         </div>
+
         <div class="bet-slot" data-slot="B">
           <div class="bet-head">
-            <span class="bet-title">Bet B</span>
-            <span class="bet-status" id="status-B">—</span>
+            <span class="bet-title">★ Bet B</span>
+            <span class="bet-status" id="status-B">ready</span>
           </div>
           <div class="bet-row">
-            <input class="bet-stake" id="stake-B" type="number" inputmode="decimal" min="1" max="500" step="1" value="10" />
+            <input class="bet-stake" id="stake-B" type="number" inputmode="decimal" min="1" max="500" step="1" value="10" aria-label="Bet B stake" />
             <div class="bet-quick">
-              <button data-stake-step="B" data-mult="0.5" type="button">½</button>
-              <button data-stake-step="B" data-mult="2"   type="button">2×</button>
+              <button data-stake-step="B" data-mult="0.5" type="button" aria-label="Halve">½</button>
+              <button data-stake-step="B" data-mult="2"   type="button" aria-label="Double">2×</button>
             </div>
+          </div>
+          <div class="preset-row" data-presets="B">
+            <button type="button" data-preset="1">1</button>
+            <button type="button" data-preset="5">5</button>
+            <button type="button" data-preset="10">10</button>
+            <button type="button" data-preset="25">25</button>
+            <button type="button" data-preset="50">50</button>
+            <button type="button" data-preset="100">100</button>
           </div>
           <div class="bet-action">
             <button class="place" id="place-B" type="button">Place 10</button>
@@ -92,10 +115,13 @@
       <!-- ── Live feed ── -->
       <aside class="feed">
         <div class="feed-head">
+          <span class="live-tag">Live</span>
           <span><strong id="feed-players">0</strong> in round</span>
           <span><strong id="feed-wagered">0</strong> wagered</span>
         </div>
-        <ul class="feed-list" id="feed-list" aria-live="polite"></ul>
+        <ul class="feed-list" id="feed-list" aria-live="polite">
+          <li class="feed-empty" id="feed-empty">Waiting for action…</li>
+        </ul>
       </aside>
     </div>
 
@@ -104,21 +130,21 @@
       <div class="modal-card">
         <button class="modal-close" id="close-fair" type="button" aria-label="Close">×</button>
         <h2>Provably Fair</h2>
-        <p class="muted small">Every round is committed before it starts. Use the values below to recompute and verify.</p>
+        <p class="muted small">Every round is committed before it starts. Use the values below to recompute and verify the crash point.</p>
 
         <h3>Current round</h3>
         <dl class="kv">
           <dt>Nonce</dt><dd id="fair-cur-nonce">—</dd>
-          <dt>Server seed hash</dt><dd class="mono" id="fair-cur-hash">—</dd>
-          <dt>Client seed</dt><dd class="mono" id="fair-cur-cseed">—</dd>
+          <dt>Server seed hash</dt><dd class="break"><span class="mono" id="fair-cur-hash">—</span></dd>
+          <dt>Client seed</dt><dd><span class="mono" id="fair-cur-cseed">—</span></dd>
         </dl>
 
         <h3>Last completed round</h3>
         <dl class="kv">
           <dt>Nonce</dt><dd id="fair-last-nonce">—</dd>
-          <dt>Server seed</dt><dd class="mono break" id="fair-last-sseed">—</dd>
-          <dt>Server seed hash</dt><dd class="mono break" id="fair-last-hash">—</dd>
-          <dt>Client seed</dt><dd class="mono" id="fair-last-cseed">—</dd>
+          <dt>Server seed</dt><dd class="break"><span class="mono" id="fair-last-sseed">—</span></dd>
+          <dt>Server seed hash</dt><dd class="break"><span class="mono" id="fair-last-hash">—</span></dd>
+          <dt>Client seed</dt><dd><span class="mono" id="fair-last-cseed">—</span></dd>
           <dt>Crash point</dt><dd id="fair-last-crash">—</dd>
         </dl>
         <button class="primary" id="verify-last" type="button">Verify last round</button>

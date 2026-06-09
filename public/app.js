@@ -122,8 +122,14 @@ function onPhase(msg) {
     // Reset displayed slot statuses for the new round.
     state.bets = { A: null, B: null };
     renderBets();
-    // Clear feed for the new round.
-    $('#feed-list').replaceChildren();
+    // Clear feed for the new round — keep the empty placeholder ready.
+    const ul = $('#feed-list');
+    ul.replaceChildren();
+    const empty = document.createElement('li');
+    empty.id = 'feed-empty';
+    empty.className = 'feed-empty';
+    empty.textContent = 'Waiting for action…';
+    ul.appendChild(empty);
   }
   if (msg.phase === 'flying') {
     state.lastTickMs = performance.now();
@@ -240,7 +246,7 @@ function onTotals(msg) {
 // ── Render: top bar ──────────────────────────────────────────────────
 
 function renderBalance() {
-  $('#balance').textContent = state.balance.toFixed(2);
+  $('#balance-value').textContent = state.balance.toFixed(2);
 }
 
 function chipClass(crashPoint, escaped) {
@@ -267,6 +273,7 @@ function renderHistory({ popLatest = false } = {}) {
 
 function renderBets() {
   for (const slot of ['A', 'B']) {
+    const card    = document.querySelector(`.bet-slot[data-slot="${slot}"]`);
     const place   = $(`#place-${slot}`);
     const cash    = $(`#cashout-${slot}`);
     const status  = $(`#status-${slot}`);
@@ -276,8 +283,11 @@ function renderBets() {
     const isBetting = state.phase === 'betting';
     const isFlying  = state.phase === 'flying';
 
+    if (card) card.classList.toggle('has-bet', !!bet);
+
     place.textContent = bet ? 'Placed' : `Place ${stakeIn.value || 0}`;
     place.disabled = !!bet || !isBetting;
+    place.classList.toggle('pulse', !bet && isBetting);
 
     // Cash-out button shows projected payout in real time — genre standard.
     const canCash = !!bet && bet.status === 'placed' && isFlying;
@@ -319,24 +329,29 @@ function setPhaseLabel(forced) {
   const sub   = $('#phase-sub');
   if (forced === 'disconnected') {
     label.textContent = 'Disconnected — retrying…';
+    label.dataset.phase = 'connecting';
     mult.textContent = '—';
     return;
   }
   switch (state.phase) {
     case 'connecting':
       label.textContent = 'Connecting…';
+      label.dataset.phase = 'connecting';
       break;
     case 'betting':
       label.textContent = 'Place your bets';
+      label.dataset.phase = 'betting';
       mult.classList.remove('crashing', 'escaped');
       mult.textContent = '1.00x';
       break;
     case 'flying':
-      label.textContent = 'Flying';
+      label.textContent = '✈ In flight';
+      label.dataset.phase = 'flying';
       mult.classList.remove('crashing', 'escaped');
       break;
     case 'crash':
-      label.textContent = state.crashEscaped ? 'Escaped' : 'Crashed';
+      label.textContent = state.crashEscaped ? '☁ Escaped' : '✕ Crashed';
+      label.dataset.phase = state.crashEscaped ? 'escape' : 'crash';
       mult.classList.add(state.crashEscaped ? 'escaped' : 'crashing');
       break;
   }
@@ -345,20 +360,30 @@ function setPhaseLabel(forced) {
 
 // ── Live feed ────────────────────────────────────────────────────────
 
-const FEED_MAX = 50;
+const FEED_MAX = 60;
+function initialsFor(name) {
+  const trimmed = (name || '?').replace(/[^A-Za-z0-9]/g, '');
+  return (trimmed[0] || '?').toUpperCase();
+}
 function pushFeed({ name, slot, text, deltaText, cls }) {
   const ul = $('#feed-list');
+  const empty = ul.querySelector('#feed-empty');
+  if (empty) empty.remove();
+
   const li = document.createElement('li');
+  const avatar    = document.createElement('span');
   const nameSpan  = document.createElement('span');
   const multSpan  = document.createElement('span');
   const deltaSpan = document.createElement('span');
+  avatar.className = 'avatar';
+  avatar.textContent = initialsFor(name);
   nameSpan.className = 'name';
-  nameSpan.textContent = `${name}·${slot}`;
+  nameSpan.textContent = `${name} · ${slot}`;
   multSpan.className = 'mult';
   multSpan.textContent = text;
   deltaSpan.className = `delta ${cls}`;
   deltaSpan.textContent = deltaText || '';
-  li.append(nameSpan, multSpan, deltaSpan);
+  li.append(avatar, nameSpan, multSpan, deltaSpan);
   ul.prepend(li);
   while (ul.children.length > FEED_MAX) ul.removeChild(ul.lastChild);
 }
@@ -410,6 +435,13 @@ for (const slot of ['A', 'B']) {
       const m = parseFloat(b.dataset.mult);
       const next = Math.max(1, Math.min(500, Math.round(cur * m)));
       $(`#stake-${slot}`).value = next;
+      renderBets();
+    });
+  });
+
+  $$(`[data-presets="${slot}"] button[data-preset]`).forEach((b) => {
+    b.addEventListener('click', () => {
+      $(`#stake-${slot}`).value = b.dataset.preset;
       renderBets();
     });
   });
