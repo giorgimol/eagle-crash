@@ -2,30 +2,138 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#0b1020" />
     <title>Eagle Crash</title>
-    <style>
-      html, body {
-        margin: 0; padding: 0;
-        background: #0b1020;
-        color: #e8e9f3;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        height: 100%;
-      }
-      .wrap {
-        display: flex; align-items: center; justify-content: center;
-        height: 100%; text-align: center; padding: 24px;
-      }
-      h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: 0.5px; }
-      p  { margin: 0; opacity: 0.7; font-size: 14px; }
-    </style>
+    <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <div class="wrap">
-      <div>
-        <h1>Eagle Crash</h1>
-        <p>Step 1 scaffold — server is up.</p>
+    <div id="app">
+      <!-- ── Top bar: history strip + balance + provably-fair button ── -->
+      <header class="topbar">
+        <div class="history-strip" id="history-strip" aria-label="Recent crash points">
+          <!-- chips injected by JS -->
+        </div>
+        <div class="topbar-right">
+          <button id="open-fair" class="ghost-btn" type="button" title="Provably Fair">⚖️ Fair</button>
+          <div class="balance" id="balance" aria-label="Balance">1000.00</div>
+        </div>
+      </header>
+
+      <!-- ── Scene: canvas + big multiplier overlay ── -->
+      <section class="stage">
+        <canvas id="scene" width="800" height="500" aria-hidden="true"></canvas>
+        <div class="stage-overlay">
+          <div class="phase-label" id="phase-label">Connecting…</div>
+          <div class="multiplier" id="multiplier">1.00x</div>
+          <div class="phase-sub" id="phase-sub"></div>
+        </div>
+      </section>
+
+      <!-- ── Bet panels ── -->
+      <section class="bets">
+        <div class="bet-slot" data-slot="A">
+          <div class="bet-head">
+            <span class="bet-title">Bet A</span>
+            <span class="bet-status" id="status-A">—</span>
+          </div>
+          <div class="bet-row">
+            <input class="bet-stake" id="stake-A" type="number" inputmode="decimal" min="1" max="500" step="1" value="10" />
+            <div class="bet-quick">
+              <button data-stake-step="A" data-mult="0.5" type="button">½</button>
+              <button data-stake-step="A" data-mult="2"   type="button">2×</button>
+            </div>
+          </div>
+          <div class="bet-action">
+            <button class="place" id="place-A" type="button">Place 10</button>
+            <button class="cashout" id="cashout-A" type="button" disabled>Cash Out</button>
+          </div>
+          <label class="bet-opt">
+            <input type="checkbox" id="ac-on-A" />
+            <span>Auto cashout</span>
+            <input type="number" id="ac-val-A" min="1.01" max="100" step="0.01" value="2.00" />x
+          </label>
+          <label class="bet-opt">
+            <input type="checkbox" id="ab-on-A" />
+            <span>Auto bet</span>
+          </label>
+        </div>
+        <div class="bet-slot" data-slot="B">
+          <div class="bet-head">
+            <span class="bet-title">Bet B</span>
+            <span class="bet-status" id="status-B">—</span>
+          </div>
+          <div class="bet-row">
+            <input class="bet-stake" id="stake-B" type="number" inputmode="decimal" min="1" max="500" step="1" value="10" />
+            <div class="bet-quick">
+              <button data-stake-step="B" data-mult="0.5" type="button">½</button>
+              <button data-stake-step="B" data-mult="2"   type="button">2×</button>
+            </div>
+          </div>
+          <div class="bet-action">
+            <button class="place" id="place-B" type="button">Place 10</button>
+            <button class="cashout" id="cashout-B" type="button" disabled>Cash Out</button>
+          </div>
+          <label class="bet-opt">
+            <input type="checkbox" id="ac-on-B" />
+            <span>Auto cashout</span>
+            <input type="number" id="ac-val-B" min="1.01" max="100" step="0.01" value="5.00" />x
+          </label>
+          <label class="bet-opt">
+            <input type="checkbox" id="ab-on-B" />
+            <span>Auto bet</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- ── Live feed ── -->
+      <aside class="feed">
+        <div class="feed-head">
+          <span><strong id="feed-players">0</strong> in round</span>
+          <span><strong id="feed-wagered">0</strong> wagered</span>
+        </div>
+        <ul class="feed-list" id="feed-list" aria-live="polite"></ul>
+      </aside>
+    </div>
+
+    <!-- ── Provably-fair modal ── -->
+    <div class="modal" id="fair-modal" hidden>
+      <div class="modal-card">
+        <button class="modal-close" id="close-fair" type="button" aria-label="Close">×</button>
+        <h2>Provably Fair</h2>
+        <p class="muted small">Every round is committed before it starts. Use the values below to recompute and verify.</p>
+
+        <h3>Current round</h3>
+        <dl class="kv">
+          <dt>Nonce</dt><dd id="fair-cur-nonce">—</dd>
+          <dt>Server seed hash</dt><dd class="mono" id="fair-cur-hash">—</dd>
+          <dt>Client seed</dt><dd class="mono" id="fair-cur-cseed">—</dd>
+        </dl>
+
+        <h3>Last completed round</h3>
+        <dl class="kv">
+          <dt>Nonce</dt><dd id="fair-last-nonce">—</dd>
+          <dt>Server seed</dt><dd class="mono break" id="fair-last-sseed">—</dd>
+          <dt>Server seed hash</dt><dd class="mono break" id="fair-last-hash">—</dd>
+          <dt>Client seed</dt><dd class="mono" id="fair-last-cseed">—</dd>
+          <dt>Crash point</dt><dd id="fair-last-crash">—</dd>
+        </dl>
+        <button class="primary" id="verify-last" type="button">Verify last round</button>
+        <pre class="verify-out" id="verify-out" hidden></pre>
       </div>
     </div>
+
+    <!-- ── History-chip detail modal ── -->
+    <div class="modal" id="chip-modal" hidden>
+      <div class="modal-card">
+        <button class="modal-close" id="close-chip" type="button" aria-label="Close">×</button>
+        <h2>Round detail</h2>
+        <dl class="kv" id="chip-kv"></dl>
+        <button class="primary" id="verify-chip" type="button">Verify this round</button>
+        <pre class="verify-out" id="verify-chip-out" hidden></pre>
+      </div>
+    </div>
+
+    <script type="module" src="/app.js"></script>
   </body>
 </html>
