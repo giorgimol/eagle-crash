@@ -289,9 +289,10 @@ export function createScene(canvas) {
   }
 
   // ── Hunter ──────────────────────────────────────────────────────────
-  function drawHunter(x, y, aimAngle, recoil = 0, muzzleFlash = 0) {
+  function drawHunter(x, y, aimAngle, recoil = 0, muzzleFlash = 0, scale = 1.45) {
     ctx.save();
     ctx.translate(x, y);
+    ctx.scale(scale, scale);
     // Shadow
     ctx.fillStyle = 'rgba(0,0,0,0.50)';
     ctx.beginPath();
@@ -605,33 +606,42 @@ export function createScene(canvas) {
   // ── Trail curve (the signature) ─────────────────────────────────────
   function drawTrail(mult) {
     if (trail.length < 2) return;
-    const lineWidth = 2 + Math.min(8, Math.log(mult) * 1.3);
+    // Thicker baseline so the trail reads from the first frame, not just
+    // once the multiplier climbs.
+    const lineWidth = 3 + Math.min(10, Math.log(mult) * 1.6);
     const t = Math.min(1, Math.log(mult) / Math.log(20));
-    const r = Math.round(180 + t * 75);
-    const g = Math.round(120 + (1 - t) * 50);
-    const b = Math.round(40  + (1 - t) * 60);
+    const r = Math.round(200 + t * 55);
+    const g = Math.round(130 + (1 - t) * 50);
+    const b = Math.round(50  + (1 - t) * 60);
 
     ctx.save();
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    // Outer glow
-    ctx.strokeStyle = `rgba(${r},${g},${b},0.30)`;
+    // Build path once, stroke 3 times for layered glow → core → highlight.
+    const path = new Path2D();
+    path.moveTo(trail[0].x, trail[0].y);
+    for (let i = 1; i < trail.length; i++) path.lineTo(trail[i].x, trail[i].y);
+
+    // Outer glow (wider, lower alpha)
+    ctx.strokeStyle = `rgba(${r},${g},${b},0.45)`;
     ctx.lineWidth = lineWidth * 4;
-    ctx.beginPath();
-    ctx.moveTo(trail[0].x, trail[0].y);
-    for (let i = 1; i < trail.length; i++) ctx.lineTo(trail[i].x, trail[i].y);
-    ctx.stroke();
+    ctx.stroke(path);
+
+    // Mid bloom
+    ctx.strokeStyle = `rgba(${r},${g + 35},${b + 25},0.80)`;
+    ctx.lineWidth = lineWidth * 1.8;
+    ctx.stroke(path);
 
     // Core
-    ctx.strokeStyle = `rgba(${r},${g + 40},${b + 30},0.95)`;
+    ctx.strokeStyle = `rgba(${Math.min(255, r + 25)},${Math.min(255, g + 60)},${Math.min(255, b + 50)},1.0)`;
     ctx.lineWidth = lineWidth;
-    ctx.stroke();
+    ctx.stroke(path);
 
-    // Inner highlight
-    ctx.strokeStyle = `rgba(255, 248, 215, 0.65)`;
-    ctx.lineWidth = Math.max(1, lineWidth * 0.35);
-    ctx.stroke();
+    // Bright inner highlight
+    ctx.strokeStyle = `rgba(255, 250, 220, 0.85)`;
+    ctx.lineWidth = Math.max(1.5, lineWidth * 0.45);
+    ctx.stroke(path);
     ctx.restore();
   }
   function clearTrail() { trail = []; }
@@ -739,9 +749,19 @@ export function createScene(canvas) {
       const dy = -((drawH - height) / 2);
       ctx.drawImage(img, dx, dy, drawW, drawH);
 
-      // Color-grade overlay tinted by sky palette — preserves photo detail
-      // but pulls hues toward the current "time of day".
-      ctx.fillStyle = rgba(cols.middle, 0.28 + cols.t * 0.18);
+      // Color-grade + darken the photo so the foreground characters and
+      // trail have a quieter canvas to live on. Without this the photo's
+      // own contrast eats the silhouettes.
+      ctx.fillStyle = rgba(cols.middle, 0.42 + cols.t * 0.22);
+      ctx.fillRect(0, 0, width, height);
+
+      // Stage darkening — only the bottom half, gradient down. This keeps
+      // the sky bright while giving the hunter + flying eagle clear contrast.
+      const stage = ctx.createLinearGradient(0, height * 0.35, 0, height);
+      stage.addColorStop(0,    'rgba(0, 0, 10, 0)');
+      stage.addColorStop(0.55, 'rgba(0, 0, 10, 0.30)');
+      stage.addColorStop(1,    'rgba(0, 0, 10, 0.62)');
+      ctx.fillStyle = stage;
       ctx.fillRect(0, 0, width, height);
     } else {
       // Procedural sky
@@ -772,8 +792,8 @@ export function createScene(canvas) {
     ctx.fillStyle = rgba(sunCore, 0.95);
     ctx.beginPath(); ctx.arc(sunX, sunY, sunR, 0, TWO_PI); ctx.fill();
 
-    // 4) GOD RAYS (cheap implementation, looks legit with the bloom)
-    drawGodRays(sunX, sunY, width, height, 0.55 + cols.t * 0.35);
+    // 4) GOD RAYS — softer so they don't fight the foreground
+    drawGodRays(sunX, sunY, width, height, 0.30 + cols.t * 0.25);
 
     // 5) FAR & MID CLOUDS — drawn behind mountains
     drawCloudBand(cloudsFar, width, height, parallax.cloudFar, 0.20);
@@ -840,10 +860,25 @@ export function createScene(canvas) {
     const aim = hunterAimAngle(eaglePos, hunterPos);
     drawHunter(hunterPos.x, hunterPos.y, aim, recoil, muzzleFlash);
 
-    // 14) EAGLE — drawn last (in front), with rim light coming from the sun
+    // 14) EAGLE — soft halo first (so the silhouette is always legible
+    //     against any backdrop), then the rim-lit eagle on top, at a
+    //     visibly larger scale than before.
     if (eaglePos.y < height + 60) {
-      const rimColor = rgba(sunCore, 0.55);
-      drawEagle(eaglePos.x, eaglePos.y, 1.1, wingPhase, {
+      const rimColor = rgba(sunCore, 0.65);
+
+      // Halo — wide warm bloom centered on the eagle.
+      const HALO_R = 100;
+      const halo = ctx.createRadialGradient(eaglePos.x, eaglePos.y, 0, eaglePos.x, eaglePos.y, HALO_R);
+      halo.addColorStop(0,    rgba(sunCore, 0.32));
+      halo.addColorStop(0.4,  rgba(sunCore, 0.14));
+      halo.addColorStop(1,    rgba(sunCore, 0));
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      ctx.fillStyle = halo;
+      ctx.fillRect(eaglePos.x - HALO_R, eaglePos.y - HALO_R, HALO_R * 2, HALO_R * 2);
+      ctx.restore();
+
+      drawEagle(eaglePos.x, eaglePos.y, 1.5, wingPhase, {
         shot: eagleShot,
         rotation: eagleRotation,
         rimLight: rimColor,
@@ -872,20 +907,20 @@ export function createScene(canvas) {
       ctx.fillRect(0, 0, width, height);
     }
 
-    // 18) LENS FLARE (drawn over everything for cinematic feel)
-    drawLensFlare(sunX, sunY, width, height, 0.6 + cols.t * 0.3);
+    // 18) LENS FLARE — softer than before; just enough for cinema feel.
+    drawLensFlare(sunX, sunY, width, height, 0.32 + cols.t * 0.20);
 
-    // 19) VIGNETTE
-    const vg = ctx.createRadialGradient(width / 2, height / 2, Math.min(width, height) * 0.35,
-                                        width / 2, height / 2, Math.max(width, height) * 0.75);
+    // 19) VIGNETTE — gentler; we already darkened the bottom for the stage.
+    const vg = ctx.createRadialGradient(width / 2, height / 2, Math.min(width, height) * 0.45,
+                                        width / 2, height / 2, Math.max(width, height) * 0.80);
     vg.addColorStop(0, 'rgba(0,0,0,0)');
-    vg.addColorStop(1, 'rgba(0,0,0,0.48)');
+    vg.addColorStop(1, 'rgba(0,0,0,0.34)');
     ctx.fillStyle = vg;
     ctx.fillRect(0, 0, width, height);
 
     // 20) FILM GRAIN — very subtle, tiled, animated by jittering offset
     ctx.save();
-    ctx.globalAlpha = 0.10;
+    ctx.globalAlpha = 0.06;
     const gx = (Math.random() * grain.width)  | 0;
     const gy = (Math.random() * grain.height) | 0;
     const pat = ctx.createPattern(grain, 'repeat');
