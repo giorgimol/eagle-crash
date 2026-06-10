@@ -143,26 +143,22 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
 .feed       { grid-area: feed; }
 
 /* ── Overflow safety: any flex/grid child whose content can be wider
-   than its share needs min-width:0 so it actually constrains. Without
-   this, content forces the parent to grow past the viewport and the
-   right edge gets clipped (this was the mobile bug). */
+   than its share needs min-width:0 so it actually constrains. */
 .history-strip,
 .topbar-right,
 .balance,
 .bet-slot,
-.bet-row,
-.bet-action,
-.bet-quick,
+.stake-row,
 .preset-row,
+.bet-opts-row,
 .round-econ,
 .round-econ-row,
 .feed-list,
 .feed-list li,
 .feed-list .name { min-width: 0; }
-.preset-row { flex-wrap: wrap; }       /* presets break to 2 lines instead of forcing overflow */
 .preset-row button,
-.bet-quick button { min-width: 0; }    /* let them shrink under their natural size */
-.bet-slot { overflow: hidden; }        /* belt-and-braces: clip anything stray */
+.stake-step { min-width: 0; }
+.bet-slot { overflow: hidden; }
 
 /* ── Top bar ─────────────────────────────────────────────────────── */
 
@@ -425,97 +421,173 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
 .bet-status.cashed { color: var(--green-bright); }
 .bet-status.bust   { color: var(--red-bright); }
 
-.bet-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
-.bet-quick {
-  display: flex;
+/* ── Smartsoft-style stake row: [−] [value] [+] ──────────────────── */
+.stake-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 42px;
   gap: 6px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  align-items: stretch;
 }
-.bet-quick button {
-  padding: 6px 10px;
-  min-width: 0;
-  font-size: 11px;
-  font-weight: 600;
-  background: rgba(255,255,255,0.04);
+.stake-step {
+  background: var(--bg-2);
+  border: 1px solid var(--card-border);
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0;
+  border-radius: 8px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+.stake-step:hover:not(:disabled) {
+  background: var(--bg-3);
+  border-color: var(--card-border-strong);
+}
+.stake-row input[type=number] {
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  padding: 8px 4px;
+  letter-spacing: 0.02em;
 }
 
+/* Preset row — quieter chip-style picks (4 only) */
 .preset-row {
   display: flex;
   gap: 4px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 .preset-row button {
-  flex: 1;
-  padding: 6px 0;
+  flex: 1 1 0;
+  padding: 7px 0;
   font-size: 11px;
   background: transparent;
-  border-color: var(--card-border);
+  border: 1px solid var(--card-border);
   color: var(--ink-soft);
-  min-width: 36px;
+  min-width: 0;
+  border-radius: 6px;
 }
 .preset-row button:hover { background: var(--bg-2); color: var(--ink); }
 
-.bet-action { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
-.bet-action.dual { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* ── Primary action button — adaptive: place ⇄ cashout ──────────── */
+/* One big hero button that morphs by phase. The JS toggles classes
+   .place / .cashout / .cashed / .disabled — color and label follow. */
+.primary-action {
+  width: 100%;
+  min-height: 50px;
+  padding: 12px 8px;
+  border: 0;
+  border-radius: 12px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: 0.01em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  line-height: 1.05;
+  cursor: pointer;
+  transition: transform 100ms ease, box-shadow 140ms ease, background 140ms ease;
+}
+.primary-action:active:not(:disabled) { transform: scale(0.98); }
 
-.bet-action .place {
+.primary-action.place {
   background: linear-gradient(180deg, var(--gold-bright), var(--gold));
   color: #1a1300;
-  border-color: transparent;
-  font-weight: 800;
-  padding: 12px;
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  box-shadow: 0 8px 22px rgba(243, 176, 61, 0.25), 0 1px 0 rgba(255,255,255,0.4) inset;
+  box-shadow: 0 8px 22px rgba(243, 176, 61, 0.30), 0 1px 0 rgba(255,255,255,0.4) inset;
 }
-.bet-action .place:hover:not(:disabled) {
+.primary-action.place:not(:disabled):hover {
   background: linear-gradient(180deg, #ffe18b, var(--gold-bright));
-  box-shadow: 0 10px 28px rgba(243, 176, 61, 0.35), 0 1px 0 rgba(255,255,255,0.5) inset;
 }
-.bet-action .place.pulse { animation: btnPulse 1.6s ease-in-out infinite; }
+.primary-action.place.pulse { animation: btnPulse 1.6s ease-in-out infinite; }
 @keyframes btnPulse {
-  0%, 100% { box-shadow: 0 8px 22px rgba(243, 176, 61, 0.25), 0 1px 0 rgba(255,255,255,0.4) inset; }
-  50%      { box-shadow: 0 10px 28px rgba(243, 176, 61, 0.55), 0 1px 0 rgba(255,255,255,0.55) inset; }
+  0%, 100% { box-shadow: 0 8px 22px rgba(243, 176, 61, 0.30), 0 1px 0 rgba(255,255,255,0.4) inset; }
+  50%      { box-shadow: 0 10px 28px rgba(243, 176, 61, 0.60), 0 1px 0 rgba(255,255,255,0.55) inset; }
 }
 
-.bet-action .cashout {
+.primary-action.cashout {
   background: linear-gradient(180deg, var(--green-bright), var(--green));
   color: #04140a;
-  border-color: transparent;
-  font-weight: 800;
-  padding: 12px;
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  box-shadow: 0 8px 22px rgba(46, 210, 138, 0.25), 0 1px 0 rgba(255,255,255,0.3) inset;
+  box-shadow: 0 8px 22px rgba(46, 210, 138, 0.30), 0 1px 0 rgba(255,255,255,0.30) inset;
+  animation: cashoutPulse 1.0s ease-in-out infinite;
 }
-.bet-action .cashout:hover:not(:disabled) {
-  background: linear-gradient(180deg, #84ffc5, var(--green-bright));
+@keyframes cashoutPulse {
+  0%, 100% { box-shadow: 0 8px 22px rgba(46, 210, 138, 0.30), 0 1px 0 rgba(255,255,255,0.30) inset; }
+  50%      { box-shadow: 0 10px 32px rgba(46, 210, 138, 0.60), 0 1px 0 rgba(255,255,255,0.40) inset; }
 }
-.bet-action .cashout.flash {
-  animation: flash 480ms ease-out;
-}
+.primary-action.cashout.flash { animation: flash 480ms ease-out; }
 @keyframes flash {
-  0%   { box-shadow: 0 0 0 0 rgba(255, 213, 107, 0.85), 0 8px 22px rgba(46, 210, 138, 0.25); }
-  100% { box-shadow: 0 0 0 32px rgba(255, 213, 107, 0),    0 8px 22px rgba(46, 210, 138, 0.25); }
+  0%   { box-shadow: 0 0 0 0 rgba(255, 213, 107, 0.90), 0 8px 22px rgba(46, 210, 138, 0.30); }
+  100% { box-shadow: 0 0 0 32px rgba(255, 213, 107, 0),  0 8px 22px rgba(46, 210, 138, 0.30); }
 }
 
+.primary-action.cashed {
+  background: rgba(46, 210, 138, 0.18);
+  color: var(--green-bright);
+  border: 1px solid rgba(46, 210, 138, 0.40);
+  box-shadow: none;
+  animation: none;
+}
+.primary-action.bust {
+  background: rgba(255, 77, 94, 0.15);
+  color: var(--red-bright);
+  border: 1px solid rgba(255, 77, 94, 0.35);
+  box-shadow: none;
+  animation: none;
+}
+.primary-action.disabled,
+.primary-action:disabled {
+  background: rgba(255,255,255,0.04);
+  color: var(--ink-dim);
+  border: 1px solid var(--card-border);
+  box-shadow: none;
+  cursor: not-allowed;
+  animation: none;
+}
+.primary-action .sub {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  opacity: 0.75;
+  font-family: var(--font-ui);
+  margin-top: 2px;
+}
+
+/* ── Auto / Loop options row — compact, side-by-side ────────────── */
+.bet-opts-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, auto);
+  gap: 8px;
+  align-items: center;
+  padding-top: 2px;
+}
 .bet-opt {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-size: 12px;
   color: var(--ink-soft);
   font-weight: 500;
+  white-space: nowrap;
 }
 .bet-opt input[type=checkbox] {
   accent-color: var(--gold);
-  width: 14px; height: 14px;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
 }
 .bet-opt input[type=number] {
-  width: 70px;
-  padding: 6px 8px;
+  width: 56px;
+  padding: 5px 6px;
   font-size: 12px;
+  font-weight: 600;
 }
 
 /* ── Live feed ───────────────────────────────────────────────────── */
@@ -934,32 +1006,33 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
   .econ-label { font-size: 9px; letter-spacing: 0.06em; }
   .econ-value { font-size: 15px; }
 
-  /* Bet panels — keep 2-col side-by-side, ULTRA-compact internals so
-     A and B both fit AND the whole page fits in one viewport. */
+  /* Bet panels — JetX-style mobile-first compact, 2-col side-by-side.
+     ± stake row + 4 presets + ONE big adaptive action + tiny opts. */
   .bets { gap: 6px; padding: 6px var(--pad); grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .bet-slot { padding: 8px; gap: 6px; border-top-width: 2px; }
   .bet-head { margin-bottom: -2px; }
   .bet-title { font-size: 11px; letter-spacing: 0.04em; }
   .bet-status { font-size: 10px; }
-  .bet-row { gap: 4px; }
-  .bet-row input[type=number] { padding: 8px 8px; font-size: 14px; }
-  .bet-quick { gap: 4px; }
-  .bet-quick button { padding: 6px 6px; font-size: 10px; min-width: 30px; min-height: 32px; }
 
-  /* Presets stay on ONE row by shrinking to fit the column. */
+  /* Stake row tightens but stays thumb-friendly */
+  .stake-row { grid-template-columns: 36px minmax(0, 1fr) 36px; gap: 4px; }
+  .stake-step { min-height: 38px; font-size: 18px; }
+  .stake-row input[type=number] { font-size: 17px; padding: 6px 2px; }
+
+  /* 4 presets always on one row */
   .preset-row { gap: 3px; flex-wrap: nowrap; }
-  .preset-row button { flex: 1 1 0; padding: 7px 2px; font-size: 10px; min-width: 0; min-height: 32px; }
+  .preset-row button { flex: 1 1 0; padding: 7px 2px; font-size: 11px; min-width: 0; min-height: 32px; }
 
-  /* Place + Cash Out SIDE BY SIDE — was two stacked rows eating 100px.
-     Now ~42px total. Player still sees both states at all times. */
-  .bet-action { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
-  .bet-action .place,
-  .bet-action .cashout { padding: 10px 4px; font-size: 12px; min-height: 42px; font-weight: 800; border-radius: 8px; }
+  /* Single adaptive action button — Smartsoft hero */
+  .primary-action { min-height: 46px; font-size: 13px; padding: 8px 6px; border-radius: 10px; }
+  .primary-action .sub { font-size: 9px; margin-top: 1px; }
 
-  /* Auto rows: minimal vertical footprint */
-  .bet-opt { font-size: 10px; gap: 5px; padding: 0; line-height: 1.2; }
-  .bet-opt input[type=checkbox] { width: 13px; height: 13px; flex: 0 0 auto; }
-  .bet-opt input[type=number] { width: 50px; padding: 4px 6px; font-size: 10px; }
+  /* Opts row: Auto + Loop side by side, tiny */
+  .bet-opts-row { grid-template-columns: minmax(0, 1fr) auto; gap: 4px; }
+  .bet-opt { font-size: 10px; gap: 4px; padding: 0; line-height: 1.2; }
+  .bet-opt input[type=checkbox] { width: 12px; height: 12px; flex: 0 0 auto; }
+  .bet-opt input[type=number] { width: 44px; padding: 3px 4px; font-size: 10px; }
+  .bet-opt span { white-space: nowrap; }
 
   /* Feed: small strip at bottom */
   .feed { max-height: 14dvh; }
@@ -995,10 +1068,12 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
 /* Very narrow phones (≤ 360px) — shave a bit more aggressively */
 @media (max-width: 360px) {
   .multiplier { font-size: 48px; }
-  .preset-row button { font-size: 10px; padding: 7px 0; }
-  .bet-quick button { padding: 6px 6px; font-size: 10px; }
-  .bet-opt input[type=number] { width: 50px; }
-  .topbar .brand span:last-child { display: none; }   /* hide "EAGLE" text, keep dot */
+  .preset-row button { font-size: 10px; padding: 6px 0; min-height: 30px; }
+  .stake-step { min-height: 36px; font-size: 16px; }
+  .stake-row input[type=number] { font-size: 15px; }
+  .primary-action { font-size: 12px; min-height: 42px; }
+  .bet-opt input[type=number] { width: 40px; }
+  .topbar .brand span:last-child { display: none; }
 }
 
 /* Landscape phones: pull the multiplier up so the bet panel is reachable */

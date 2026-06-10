@@ -282,47 +282,113 @@ function renderHistory({ popLatest = false } = {}) {
 
 // ── Render: bet panels ───────────────────────────────────────────────
 
+// Adaptive bet panel renderer (Smartsoft pattern).
+// One primary-action button per slot. State machine:
+//   betting + no bet  → "Place X"      (gold, pulsing)
+//   betting + bet     → "Placed X"     (gold, disabled — bet locked in)
+//   flying  + placed  → "Cash Out Y"   (green, pulsing, with live payout)
+//   flying  + cashed  → "+Δ Cashed"    (green ghost, disabled)
+//   crash   + bust    → "−stake Bust"  (red ghost)
+//   crash   + cashed  → "+Δ Cashed"    (green ghost)
+//   otherwise         → "—"            (disabled)
+function setActionState(btn, { cls, label, sub, act, disabled, pulse, flash }) {
+  btn.className = `primary-action ${cls}${pulse ? ' pulse' : ''}${flash ? ' flash' : ''}`;
+  btn.disabled = !!disabled;
+  btn.dataset.act = act || 'none';
+  if (sub) {
+    btn.innerHTML = `<span>${label}</span><span class="sub">${sub}</span>`;
+  } else {
+    btn.textContent = label;
+  }
+}
+
 function renderBets() {
   for (const slot of ['A', 'B']) {
     const card    = document.querySelector(`.bet-slot[data-slot="${slot}"]`);
-    const place   = $(`#place-${slot}`);
-    const cash    = $(`#cashout-${slot}`);
+    const action  = $(`#action-${slot}`);
     const status  = $(`#status-${slot}`);
     const stakeIn = $(`#stake-${slot}`);
     const bet = state.bets[slot];
 
     const isBetting = state.phase === 'betting';
     const isFlying  = state.phase === 'flying';
+    const isCrash   = state.phase === 'crash';
 
-    if (card) card.classList.toggle('has-bet', !!bet);
-
-    place.textContent = bet ? 'Placed' : `Place ${stakeIn.value || 0}`;
-    place.disabled = !!bet || !isBetting;
-    place.classList.toggle('pulse', !bet && isBetting);
-
-    // Cash-out button shows projected payout in real time — genre standard.
-    const canCash = !!bet && bet.status === 'placed' && isFlying;
-    cash.disabled = !canCash;
-    if (canCash) {
-      cash.textContent = `Cash Out ${(bet.stake * state.multiplier).toFixed(2)}`;
-    } else if (bet?.status === 'cashed') {
-      cash.textContent = `Cashed +${(bet.payout - bet.stake).toFixed(2)}`;
-    } else {
-      cash.textContent = 'Cash Out';
+    if (card) {
+      card.classList.toggle('has-bet', !!bet);
+      card.dataset.status = bet?.status || 'idle';
     }
 
+    if (isBetting) {
+      if (bet) {
+        setActionState(action, {
+          cls: 'place disabled',
+          label: `Placed ${bet.stake.toFixed(0)}`,
+          sub: bet.autoCashout ? `auto @ ${bet.autoCashout.toFixed(2)}x` : null,
+          disabled: true,
+        });
+      } else {
+        setActionState(action, {
+          cls: 'place',
+          label: `Place ${stakeIn.value || 0}`,
+          act: 'place',
+          pulse: true,
+        });
+      }
+    } else if (isFlying) {
+      if (bet && bet.status === 'placed') {
+        const projected = (bet.stake * state.multiplier).toFixed(2);
+        setActionState(action, {
+          cls: 'cashout',
+          label: `Cash Out`,
+          sub: projected,
+          act: 'cashout',
+        });
+      } else if (bet && bet.status === 'cashed') {
+        setActionState(action, {
+          cls: 'cashed',
+          label: `+${(bet.payout - bet.stake).toFixed(2)}`,
+          sub: `cashed @ ${bet.cashedAt.toFixed(2)}x`,
+          disabled: true,
+        });
+      } else {
+        setActionState(action, { cls: 'disabled', label: '— No bet', disabled: true });
+      }
+    } else if (isCrash) {
+      if (bet && bet.status === 'bust') {
+        setActionState(action, {
+          cls: 'bust',
+          label: `−${bet.stake.toFixed(2)}`,
+          sub: 'bust',
+          disabled: true,
+        });
+      } else if (bet && bet.status === 'cashed') {
+        setActionState(action, {
+          cls: 'cashed',
+          label: `+${(bet.payout - bet.stake).toFixed(2)}`,
+          sub: `cashed @ ${bet.cashedAt.toFixed(2)}x`,
+          disabled: true,
+        });
+      } else {
+        setActionState(action, { cls: 'disabled', label: 'Round ended', disabled: true });
+      }
+    } else {
+      setActionState(action, { cls: 'disabled', label: '—', disabled: true });
+    }
+
+    // Status pill in the bet-head — always shows the slot's current state.
     if (!bet) {
-      status.textContent = isBetting ? 'ready' : 'idle';
+      status.textContent = isBetting ? 'Ready' : 'Idle';
       status.className = 'bet-status';
     } else if (bet.status === 'placed') {
       const m = state.multiplier;
-      status.textContent = isFlying ? `${(bet.stake * m).toFixed(2)} @ ${m.toFixed(2)}x` : `staked ${bet.stake}`;
+      status.textContent = isFlying ? `${(bet.stake * m).toFixed(2)} @ ${m.toFixed(2)}x` : `Staked ${bet.stake}`;
       status.className = 'bet-status placed';
     } else if (bet.status === 'cashed') {
-      status.textContent = `cashed @ ${bet.cashedAt.toFixed(2)}x · +${(bet.payout - bet.stake).toFixed(2)}`;
+      status.textContent = `+${(bet.payout - bet.stake).toFixed(2)}`;
       status.className = 'bet-status cashed';
     } else if (bet.status === 'bust') {
-      status.textContent = `bust · -${bet.stake.toFixed(2)}`;
+      status.textContent = `−${bet.stake.toFixed(2)}`;
       status.className = 'bet-status bust';
     }
   }
@@ -402,12 +468,11 @@ function pushFeed({ name, slot, text, deltaText, cls }) {
 // ── Cash-out feedback ────────────────────────────────────────────────
 
 function flashCashout(slot, profit) {
-  const btn = $(`#cashout-${slot}`);
+  const btn = $(`#action-${slot}`);
   if (!btn) return;
   btn.classList.add('flash');
-  setTimeout(() => btn.classList.remove('flash'), 420);
+  setTimeout(() => btn.classList.remove('flash'), 480);
 
-  // Floating "+X.XX" text above the bet panel.
   const slotEl = btn.closest('.bet-slot');
   const rect = slotEl.getBoundingClientRect();
   const f = document.createElement('div');
@@ -429,27 +494,47 @@ function getAutoCashoutInput(slot) {
   return v;
 }
 
+// Smart stake stepping: ± buttons feel natural at any stake range.
+// Below 10 → ±1, 10–49 → ±5, 50–99 → ±10, 100+ → ±25.
+function smartStakeStep(current, delta) {
+  let step;
+  if (current < 10) step = 1;
+  else if (current < 50) step = 5;
+  else if (current < 100) step = 10;
+  else step = 25;
+  return Math.max(1, Math.min(500, current + delta * step));
+}
+
 for (const slot of ['A', 'B']) {
-  $(`#place-${slot}`).addEventListener('click', () => {
-    const stake = parseInt($(`#stake-${slot}`).value, 10);
-    if (!isFinite(stake) || stake < 1) return;
-    send({ type: 'place_bet', slot, stake, autoCashout: getAutoCashoutInput(slot) });
+  // The single adaptive action button. Behavior depends on phase/state
+  // (logic encoded in renderBets via data-act).
+  $(`#action-${slot}`).addEventListener('click', () => {
+    const btn = $(`#action-${slot}`);
+    const act = btn.dataset.act;
+    if (act === 'place') {
+      const stake = parseInt($(`#stake-${slot}`).value, 10);
+      if (!isFinite(stake) || stake < 1) return;
+      send({ type: 'place_bet', slot, stake, autoCashout: getAutoCashoutInput(slot) });
+    } else if (act === 'cashout') {
+      send({ type: 'cash_out', slot });
+    }
   });
-  $(`#cashout-${slot}`).addEventListener('click', () => {
-    send({ type: 'cash_out', slot });
-  });
+
   $(`#stake-${slot}`).addEventListener('input', () => renderBets());
 
-  $$(`button[data-stake-step="${slot}"]`).forEach((b) => {
+  // ± stake controls — Smartsoft-standard. Repeat on hold via mousedown
+  // could be added later; for now a single tap moves one smart step.
+  $$(`button[data-stake-delta="${slot}"]`).forEach((b) => {
     b.addEventListener('click', () => {
-      const cur = parseInt($(`#stake-${slot}`).value, 10) || 1;
-      const m = parseFloat(b.dataset.mult);
-      const next = Math.max(1, Math.min(500, Math.round(cur * m)));
-      $(`#stake-${slot}`).value = next;
+      const input = $(`#stake-${slot}`);
+      const cur = parseInt(input.value, 10) || 1;
+      const delta = parseInt(b.dataset.delta, 10);
+      input.value = smartStakeStep(cur, delta);
       renderBets();
     });
   });
 
+  // 4 quick presets (1, 10, 50, 100) — common stake jumps.
   $$(`[data-presets="${slot}"] button[data-preset]`).forEach((b) => {
     b.addEventListener('click', () => {
       $(`#stake-${slot}`).value = b.dataset.preset;

@@ -52,76 +52,66 @@
         </div>
       </section>
 
-      <!-- ── Bet panels ── -->
+      <!-- ── Bet panels (Smartsoft-style: ± stake, adaptive action) ── -->
       <section class="bets">
         <div class="bet-slot" data-slot="A">
           <div class="bet-head">
             <span class="bet-title">★ Bet A</span>
-            <span class="bet-status" id="status-A">ready</span>
+            <span class="bet-status" id="status-A">Ready</span>
           </div>
-          <div class="bet-row">
+          <div class="stake-row">
+            <button class="stake-step" data-stake-delta="A" data-delta="-1" type="button" aria-label="Decrease stake">−</button>
             <input class="bet-stake" id="stake-A" type="number" inputmode="decimal" min="1" max="500" step="1" value="10" aria-label="Bet A stake" />
-            <div class="bet-quick">
-              <button data-stake-step="A" data-mult="0.5" type="button" aria-label="Halve">½</button>
-              <button data-stake-step="A" data-mult="2"   type="button" aria-label="Double">2×</button>
-            </div>
+            <button class="stake-step" data-stake-delta="A" data-delta="1" type="button" aria-label="Increase stake">+</button>
           </div>
           <div class="preset-row" data-presets="A">
             <button type="button" data-preset="1">1</button>
-            <button type="button" data-preset="5">5</button>
             <button type="button" data-preset="10">10</button>
-            <button type="button" data-preset="25">25</button>
             <button type="button" data-preset="50">50</button>
             <button type="button" data-preset="100">100</button>
           </div>
-          <div class="bet-action">
-            <button class="place" id="place-A" type="button">Place 10</button>
-            <button class="cashout" id="cashout-A" type="button" disabled>Cash Out</button>
+          <button class="primary-action place" id="action-A" type="button" data-act="place">Place 10</button>
+          <div class="bet-opts-row">
+            <label class="bet-opt">
+              <input type="checkbox" id="ac-on-A" />
+              <span>Auto</span>
+              <input type="number" id="ac-val-A" min="1.01" max="100" step="0.01" value="2.00" />x
+            </label>
+            <label class="bet-opt">
+              <input type="checkbox" id="ab-on-A" />
+              <span>Loop</span>
+            </label>
           </div>
-          <label class="bet-opt">
-            <input type="checkbox" id="ac-on-A" />
-            <span>Auto cashout</span>
-            <input type="number" id="ac-val-A" min="1.01" max="100" step="0.01" value="2.00" />x
-          </label>
-          <label class="bet-opt">
-            <input type="checkbox" id="ab-on-A" />
-            <span>Auto bet</span>
-          </label>
         </div>
 
         <div class="bet-slot" data-slot="B">
           <div class="bet-head">
             <span class="bet-title">★ Bet B</span>
-            <span class="bet-status" id="status-B">ready</span>
+            <span class="bet-status" id="status-B">Ready</span>
           </div>
-          <div class="bet-row">
+          <div class="stake-row">
+            <button class="stake-step" data-stake-delta="B" data-delta="-1" type="button" aria-label="Decrease stake">−</button>
             <input class="bet-stake" id="stake-B" type="number" inputmode="decimal" min="1" max="500" step="1" value="10" aria-label="Bet B stake" />
-            <div class="bet-quick">
-              <button data-stake-step="B" data-mult="0.5" type="button" aria-label="Halve">½</button>
-              <button data-stake-step="B" data-mult="2"   type="button" aria-label="Double">2×</button>
-            </div>
+            <button class="stake-step" data-stake-delta="B" data-delta="1" type="button" aria-label="Increase stake">+</button>
           </div>
           <div class="preset-row" data-presets="B">
             <button type="button" data-preset="1">1</button>
-            <button type="button" data-preset="5">5</button>
             <button type="button" data-preset="10">10</button>
-            <button type="button" data-preset="25">25</button>
             <button type="button" data-preset="50">50</button>
             <button type="button" data-preset="100">100</button>
           </div>
-          <div class="bet-action">
-            <button class="place" id="place-B" type="button">Place 10</button>
-            <button class="cashout" id="cashout-B" type="button" disabled>Cash Out</button>
+          <button class="primary-action place" id="action-B" type="button" data-act="place">Place 10</button>
+          <div class="bet-opts-row">
+            <label class="bet-opt">
+              <input type="checkbox" id="ac-on-B" />
+              <span>Auto</span>
+              <input type="number" id="ac-val-B" min="1.01" max="100" step="0.01" value="5.00" />x
+            </label>
+            <label class="bet-opt">
+              <input type="checkbox" id="ab-on-B" />
+              <span>Loop</span>
+            </label>
           </div>
-          <label class="bet-opt">
-            <input type="checkbox" id="ac-on-B" />
-            <span>Auto cashout</span>
-            <input type="number" id="ac-val-B" min="1.01" max="100" step="0.01" value="5.00" />x
-          </label>
-          <label class="bet-opt">
-            <input type="checkbox" id="ab-on-B" />
-            <span>Auto bet</span>
-          </label>
         </div>
       </section>
 
