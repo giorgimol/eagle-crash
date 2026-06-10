@@ -32,7 +32,19 @@ const BETTING_MS = 5_000;
 const CRASH_MS   = 3_000;
 const TICK_HZ    = 60;
 const TICK_MS    = Math.round(1000 / TICK_HZ);
-const GROWTH     = 1.26;            // m(t) = GROWTH ^ t, t in seconds
+// m(t) = GROWTH ^ t, t in seconds.
+//
+// Genre-leader pacing reference (Wizard of Odds, Aviator/JetX teardowns):
+//   JetX increments ~1% every 1/7s → (1.01)^7 ≈ 1.0721 per second.
+//   Aviator (Spribe) is reverse-engineered to the same rate.
+// At GROWTH = 1.07: 2x at ~10s, 5x at ~24s, 10x at ~34s, 25x at ~48s.
+//
+// The brief asked for a "fast eagle" feel — original setting was 1.26
+// (2x at 3s, 10x at 10s) — but that's ~3.5× faster than shipped casino
+// games and reads as urgent rather than dramatic. We slow the start so
+// auto-cashout decisions have room to land and the trail has time to
+// arc. Trade-off: average round goes ~11s → ~25–30s.
+const GROWTH     = 1.07;
 const ESCAPE_THRESHOLD = 25.00;     // crashPoint ≥ this → eagle escapes
 const HISTORY_SIZE = 20;
 const STARTING_BALANCE = 1000;

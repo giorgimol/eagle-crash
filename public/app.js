@@ -607,13 +607,17 @@ function maybeMilestonePulse(m) {
   }
 }
 
+// Must match server/game.js GROWTH. Genre-standard 1.07/s pacing
+// (Aviator / JetX reference). Update both places if changed.
+const GROWTH = 1.07;
+
 function renderLoop() {
   // Smoothly interpolate the multiplier between server ticks for flicker-free read.
   if (state.phase === 'flying' && state.lastTickMs) {
     const sinceTick = performance.now() - state.lastTickMs;
     const projectedElapsed = state.lastTickElapsedMs + sinceTick;
     const t = projectedElapsed / 1000;
-    state.multiplier = Math.max(1.00, Math.pow(1.26, t));
+    state.multiplier = Math.max(1.00, Math.pow(GROWTH, t));
   }
   if (state.phase === 'crash') {
     state.crashElapsed = Date.now() + state.serverClockSkew - state.phaseStartedAt;
