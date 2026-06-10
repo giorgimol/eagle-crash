@@ -40,6 +40,18 @@
         </div>
       </section>
 
+      <!-- ── Round economics: prominent strip between stage and bets ── -->
+      <section class="round-econ" aria-label="Round economics">
+        <div class="round-econ-row">
+          <span class="econ-label">Round bet</span>
+          <span class="econ-value bet"><span id="feed-wagered">0.00</span></span>
+        </div>
+        <div class="round-econ-row">
+          <span class="econ-label">Round won</span>
+          <span class="econ-value won"><span id="feed-won">0.00</span></span>
+        </div>
+      </section>
+
       <!-- ── Bet panels ── -->
       <section class="bets">
         <div class="bet-slot" data-slot="A">
@@ -118,16 +130,6 @@
         <div class="feed-head">
           <span class="live-tag">Live</span>
           <span><strong id="feed-players">0</strong> in round</span>
-        </div>
-        <div class="round-econ" aria-label="Round economics">
-          <div class="round-econ-row">
-            <span class="econ-label">Round bet</span>
-            <span class="econ-value bet"><span id="feed-wagered">0.00</span></span>
-          </div>
-          <div class="round-econ-row">
-            <span class="econ-label">Round won</span>
-            <span class="econ-value won"><span id="feed-won">0.00</span></span>
-          </div>
         </div>
         <ul class="feed-list" id="feed-list" aria-live="polite">
           <li class="feed-empty" id="feed-empty">Waiting for action…</li>

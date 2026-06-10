@@ -112,20 +112,22 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
 #app {
   display: grid;
   grid-template-columns: 1fr;
-  grid-template-rows: auto 1fr auto auto;
+  grid-template-rows: auto 1fr auto auto auto;
   grid-template-areas:
     "top"
     "stage"
+    "econ"
     "bets"
     "feed";
   height: 100dvh;
   max-height: 100dvh;
   gap: 0;
 }
-.topbar  { grid-area: top; }
-.stage   { grid-area: stage; }
-.bets    { grid-area: bets; }
-.feed    { grid-area: feed; }
+.topbar    { grid-area: top; }
+.stage     { grid-area: stage; }
+.round-econ{ grid-area: econ; }
+.bets      { grid-area: bets; }
+.feed      { grid-area: feed; }
 
 /* ── Top bar ─────────────────────────────────────────────────────── */
 
@@ -573,9 +575,12 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
 .round-econ {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 10px;
   padding: 10px var(--pad);
-  border-bottom: 1px solid var(--card-border);
+  border-top: 1px solid var(--card-border);
+  background: linear-gradient(180deg, rgba(8, 10, 30, 0.65), rgba(8, 10, 30, 0.45));
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
 }
 .round-econ-row {
   display: flex;
@@ -811,11 +816,12 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
   :root { --pad: 18px; }
   #app {
     grid-template-columns: 1fr 340px;
-    grid-template-rows: auto 1fr auto;
+    grid-template-rows: auto 1fr auto auto;
     grid-template-areas:
-      "top  top"
+      "top   top"
       "stage feed"
-      "bets feed";
+      "econ  feed"
+      "bets  feed";
   }
   .feed { max-height: none; border-top: 0; border-left: 1px solid var(--card-border); }
   .bets { grid-template-columns: 1fr 1fr; }
@@ -846,17 +852,41 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
   /* Topbar tightens; brand shrinks to just the dot + initial */
   .topbar { gap: 6px; padding-top: 8px; padding-bottom: 8px; }
   .topbar .brand { font-size: 12px; padding-right: 2px; }
-  .balance { min-width: 0; padding: 6px 10px; font-size: 13px; }
-  .icon-btn { padding: 8px 10px; min-width: 36px; min-height: 36px; }
+  .balance { min-width: 0; padding: 7px 10px; font-size: 13px; }
+  .icon-btn { padding: 8px 10px; min-width: 40px; min-height: 40px; font-size: 16px; }
 
   .history-strip { -webkit-mask-image: linear-gradient(90deg, transparent, #000 8px, #000 calc(100% - 8px), transparent); }
-  .chip { min-width: 48px; padding: 6px 10px; font-size: 11px; }
+  .chip { min-width: 50px; padding: 7px 10px; font-size: 11px; }
 
-  /* Stage gets less vertical room but stays a hero */
-  .stage { min-height: 240px; }
-  .multiplier { font-size: clamp(54px, 18vw, 96px); }
-  .phase-label { font-size: 10px; padding: 5px 12px; letter-spacing: 0.22em; }
+  /* The stage IS the hero — guarantee it real estate on mobile.
+     Previously it was getting squeezed by the bet panels and feed
+     into ~200px, which buried the eagle and trail. Lock it to 44% of
+     the viewport with a generous min so even short phones look right. */
+  #app { grid-template-rows: auto minmax(44dvh, 1fr) auto auto auto; }
+  .stage { min-height: 320px; }
+  .multiplier { font-size: clamp(72px, 22vw, 120px); letter-spacing: -0.03em; }
+  .phase-label { font-size: 10px; padding: 6px 14px; letter-spacing: 0.22em; }
   .countdown { left: 10px; right: 10px; bottom: 8px; height: 5px; }
+
+  /* Round economics — collapsed to a single horizontal pill above the
+     bet panels (was a 2-card vertical block eating 80px). One row, both
+     numbers visible at a glance. */
+  .round-econ {
+    grid-template-columns: 1fr 1fr;
+    padding: 6px var(--pad);
+    gap: 8px;
+    border-bottom: 0;
+    border-top: 1px solid var(--card-border);
+    background: rgba(8, 10, 30, 0.55);
+  }
+  .round-econ-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+  }
+  .econ-label { font-size: 9px; letter-spacing: 0.06em; }
+  .econ-value { font-size: 15px; }
 
   /* Bet panels — keep 2-col but compress everything inside */
   .bets { gap: 8px; padding: 8px var(--pad); }
@@ -866,23 +896,20 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
   .bet-row { gap: 6px; }
   .bet-quick button { padding: 8px 8px; font-size: 11px; min-width: 36px; min-height: 36px; }
   .preset-row { gap: 3px; }
-  .preset-row button { padding: 8px 0; font-size: 11px; min-width: 0; min-height: 36px; }
+  .preset-row button { padding: 9px 0; font-size: 11px; min-width: 0; min-height: 38px; }
   .bet-action .place,
-  .bet-action .cashout { padding: 12px 6px; font-size: 13px; min-height: 44px; }
-  .bet-opt { font-size: 11px; gap: 6px; }
-  .bet-opt input[type=number] { width: 58px; padding: 6px; }
-  input[type=number] { padding: 10px; }   /* keep input boxes big enough for thumbs */
+  .bet-action .cashout { padding: 13px 6px; font-size: 14px; min-height: 46px; font-weight: 800; }
+  .bet-opt { font-size: 11px; gap: 6px; padding: 2px 0; }
+  .bet-opt input[type=number] { width: 56px; padding: 6px; font-size: 11px; }
+  input[type=number] { padding: 10px; }
 
-  /* Round economics card scales down */
-  .round-econ { padding: 8px var(--pad); gap: 6px; }
-  .round-econ-row { padding: 6px 8px; }
-  .econ-value { font-size: 16px; }
-
-  /* Feed: cap height so bet panels stay reachable above the keyboard */
-  .feed { max-height: 26dvh; }
-  .feed-head { padding: 8px var(--pad); font-size: 10px; }
-  .feed-list li { grid-template-columns: 22px 1fr auto; gap: 6px; padding: 5px 6px; font-size: 11px; }
-  .feed-list .mult { display: none; }   /* drop the mid column on narrow screens */
+  /* Feed shrinks to just a strip — important so the bet panels remain
+     above the on-screen keyboard when the user taps a stake input. */
+  .feed { max-height: 18dvh; }
+  .feed-head { padding: 6px var(--pad); font-size: 10px; }
+  .feed-list { padding: 2px 4px; }
+  .feed-list li { grid-template-columns: 22px 1fr auto; gap: 6px; padding: 4px 6px; font-size: 11px; margin-bottom: 1px; }
+  .feed-list .mult { display: none; }
   .feed-list .avatar { width: 20px; height: 20px; }
   .feed-list .delta { font-size: 11px; padding: 2px 6px; min-width: 44px; }
 
@@ -901,11 +928,10 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
   .stat-k { font-size: 9px; }
   .stat-v { font-size: 16px; }
   .stat-v.big { font-size: 18px; }
-  .calc-row { grid-template-columns: 1fr; gap: 6px; }   /* stack inputs vertically */
+  .calc-row { grid-template-columns: 1fr; gap: 6px; }
   .forecast-grid { grid-template-columns: 1fr 1fr; }
   .disclaimer { font-size: 11px; padding: 8px 10px; }
 
-  /* Floater offset above the bet card */
   .floater { font-size: 17px; }
 }
 
