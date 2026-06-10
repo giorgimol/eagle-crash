@@ -11,17 +11,33 @@
   </head>
   <body>
     <div id="app">
-      <!-- ── Top bar ── -->
+      <!-- ── Top bar: custom logotype + ticket chips + ledger balance ── -->
       <header class="topbar">
-        <div class="brand"><span class="dot"></span>EAGLE</div>
+        <div class="brand" aria-label="Eagle Crash">
+          <span class="dot" aria-hidden="true"></span>
+          <svg class="brand-mark" viewBox="0 0 32 24" aria-hidden="true">
+            <!-- Stylised eagle silhouette in flight -->
+            <path fill="currentColor" d="M16 4c-1.5 0-2.8.4-3.8 1.2-2 .6-4 1.6-5.6 2.6-1.8 1-3.4 2.4-4.6 4 1.6-.4 3.4-.6 5.2-.6 1.6 0 3 .2 4.4.6-.4.4-.8.8-1.2 1.2-.4.5-.7 1-.9 1.5 1.5.2 3.1.4 4.7.4 1.4 0 2.8-.1 4.1-.3-.3.5-.5 1-.7 1.5-.3.7-.4 1.4-.4 2.1.6-.1 1.3-.2 1.9-.2 1.2 0 2.4.2 3.4.6-.4-1.2-1-2.4-1.7-3.4 1.4.3 2.8.7 4.1 1.2.9.4 1.8.9 2.6 1.4-1.1-2-2.6-3.8-4.4-5.2-1.6-1.2-3.5-2.2-5.6-2.8C19 4.4 17.6 4 16 4z"/>
+            <circle cx="14" cy="7" r="0.9" fill="var(--wine-deep)"/>
+          </svg>
+          <span class="brand-text">EAGLE</span>
+        </div>
         <div class="history-strip" id="history-strip" aria-label="Recent crash points">
           <!-- chips injected by JS -->
         </div>
         <div class="topbar-right">
-          <button id="open-house" class="icon-btn" type="button" title="Operator P&amp;L" aria-label="Operator P&amp;L">💰</button>
-          <button id="open-fair"  class="icon-btn" type="button" title="Provably Fair"  aria-label="Provably Fair">⚖</button>
+          <button id="open-house" class="icon-btn" type="button" title="Operator P&amp;L" aria-label="Operator P&amp;L">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 3v14M14 6.5H8.5a2 2 0 0 0 0 4h3a2 2 0 0 1 0 4H5.5"/>
+            </svg>
+          </button>
+          <button id="open-fair"  class="icon-btn" type="button" title="Provably Fair"  aria-label="Provably Fair">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 3v14M4 17h12M10 5L5 11h5l-1 .5M10 5l5 6h-5l1 .5"/>
+            </svg>
+          </button>
           <div class="balance" id="balance" aria-label="Balance">
-            <span class="coin" aria-hidden="true"></span>
+            <span class="balance-label">BAL</span>
             <span id="balance-value">1000.00</span>
           </div>
         </div>
