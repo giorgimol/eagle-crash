@@ -20,6 +20,7 @@
 import { EventEmitter } from 'node:events';
 import { randomUUID } from 'node:crypto';
 import { newRoundCommitment } from './crash.js';
+import { loadState, scheduleSave } from './persistence.js';
 
 export const PHASES = Object.freeze({
   BETTING: 'betting',
@@ -96,6 +97,24 @@ export class Game extends EventEmitter {
       lastRound: null,
     };
     this._curRound = { wagered: 0, paidOut: 0, bets: 0, playerIds: new Set() };
+
+    // Restore from disk if present. Survives sleep/wake but NOT
+    // redeploys on Render free tier (filesystem is wiped per deploy).
+    const saved = loadState();
+    if (saved) {
+      this.nonce   = saved.nonce   ?? 0;
+      this.history = saved.history ?? [];
+      if (saved.operator) {
+        this.operator.rounds       = saved.operator.rounds       ?? 0;
+        this.operator.wagered      = saved.operator.wagered      ?? 0;
+        this.operator.paidOut      = saved.operator.paidOut      ?? 0;
+        this.operator.lastRound    = saved.operator.lastRound    ?? null;
+        // Keep the original session start so realized RTP averages
+        // span the whole run, not just this restart.
+        this.operator.sessionStart = saved.operator.sessionStart ?? this._now();
+      }
+      console.log(`[game] restored ${this.operator.rounds} rounds, nonce ${this.nonce}, history ${this.history.length}`);
+    }
   }
 
   // ── Lifecycle ───────────────────────────────────────────────────────────
@@ -481,6 +500,22 @@ export class Game extends EventEmitter {
     this.operator.wagered  = round2(this.operator.wagered + r.wagered);
     this.operator.paidOut  = round2(this.operator.paidOut + r.paidOut);
     this.operator.lastRound = lastRound;
+
+    // Persist BEFORE emitting 'operator' so a synchronous listener
+    // (e.g. shutdown handler calling flushSync) sees the new round
+    // in pendingPayload. Survives dyno sleep/wake; lost on redeploy.
+    scheduleSave({
+      nonce: this.nonce,
+      history: this.history,
+      operator: {
+        rounds:       this.operator.rounds,
+        wagered:      this.operator.wagered,
+        paidOut:      this.operator.paidOut,
+        sessionStart: this.operator.sessionStart,
+        lastRound:    this.operator.lastRound,
+      },
+    });
+
     this.emit('operator', this.operatorSnapshot());
 
     this._phaseHandle = setTimeout(() => this._enterBetting(), CRASH_MS);

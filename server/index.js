@@ -38,6 +38,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { Game } from './game.js';
 import { startBots } from './bots.js';
+import { flushSync } from './persistence.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
@@ -205,6 +206,7 @@ server.listen(PORT, () => {
 
 const shutdown = (signal) => {
   console.log(`\n[eagle-crash] ${signal}, shutting down`);
+  flushSync();          // make sure the latest round hits disk
   game.stop();
   wss.close();
   server.close(() => process.exit(0));
