@@ -19,11 +19,11 @@
      game — distinguishes the product on a portfolio page. */
 
   /* Warm dark surfaces (not pure black, not cold navy) */
-  --bg-0:   #15090a;    /* page background — deep umber/wine */
-  --bg-1:   #1f0e0d;    /* elevated surface */
-  --bg-2:   rgba(60, 28, 26, 0.55);
-  --bg-3:   rgba(90, 42, 36, 0.65);
-  --card-bg:           rgba(38, 16, 14, 0.65);
+  --bg-0:   #050720;    /* page background — deep umber/wine */
+  --bg-1:   #0a0e2a;    /* elevated surface */
+  --bg-2:   rgba(20, 30, 70, 0.55);
+  --bg-3:   rgba(30, 45, 100, 0.65);
+  --card-bg:           rgba(12, 18, 48, 0.65);
   --card-border:       rgba(232, 167, 60, 0.10);
   --card-border-strong:rgba(232, 167, 60, 0.22);
 
@@ -31,7 +31,7 @@
   --ink:        #f5ead8;
   --ink-soft:   #d8c5a0;
   --ink-dim:    #8a7558;
-  --ink-faint:  #5a4d3a;
+  --ink-faint:  #3a4058;
 
   /* Primary brand: amber gold (earned, casino-luxury, not gaudy) */
   --gold:        #e8a73c;
@@ -74,15 +74,14 @@
 * { box-sizing: border-box; }
 html, body {
   margin: 0; padding: 0; height: 100%; overscroll-behavior: none;
-  /* Safety net: nothing should be able to push the page horizontally. */
-  overflow-x: hidden;
+  overflow: hidden;
   max-width: 100vw;
 }
 body {
   background:
-    radial-gradient(1200px 600px at 20% -10%, rgba(194, 57, 46, 0.18), transparent 60%),
+    radial-gradient(1200px 600px at 20% -10%, rgba(40, 30, 120, 0.18), transparent 60%),
     radial-gradient(900px 500px at 95% 110%, rgba(232, 167, 60, 0.10), transparent 60%),
-    linear-gradient(180deg, var(--bg-0), #0a0405);
+    linear-gradient(180deg, var(--bg-0), #020410);
   color: var(--ink);
   font-family: var(--font-ui);
   font-size: 14px;
@@ -136,7 +135,7 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
 #app {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto 1fr auto auto auto;
+  grid-template-rows: auto 1fr auto auto minmax(0, 14dvh);
   grid-template-areas:
     "top"
     "stage"
@@ -154,6 +153,7 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
   max-width: 100vw;
   min-width: 0;
   gap: 0;
+  overflow: hidden;
 }
 .topbar     { grid-area: top; }
 .stage      { grid-area: stage; }
@@ -186,11 +186,12 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
 .topbar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
   padding: 10px var(--pad);
   background:
     linear-gradient(180deg, rgba(232, 167, 60, 0.08) 0%, rgba(0,0,0,0) 60%),
-    linear-gradient(180deg, rgba(31, 14, 13, 0.85), rgba(21, 9, 10, 0.95));
+    linear-gradient(180deg, rgba(10, 14, 42, 0.85), rgba(5, 7, 32, 0.95));
   border-bottom: 1px solid rgba(232, 167, 60, 0.18);
   /* Bronze ridge — thin warm line that suggests a milled metal edge */
   box-shadow: 0 1px 0 rgba(232, 167, 60, 0.08), 0 3px 14px rgba(0,0,0,0.5);
@@ -238,14 +239,22 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
 }
 
 .history-strip {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  right: 10px;
   display: flex;
   gap: 6px;
   overflow-x: auto;
   scrollbar-width: none;
-  flex: 1;
-  padding-right: 4px;
+  padding: 6px 10px;
+  background: rgba(5, 7, 32, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 10px;
+  border: 1px solid rgba(232, 167, 60, 0.08);
+  z-index: 5;
   scroll-behavior: smooth;
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 16px, #000 calc(100% - 16px), transparent);
 }
 .history-strip::-webkit-scrollbar { display: none; }
 
@@ -259,7 +268,7 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
   font-weight: 800;
   font-size: 12px;
   padding: 7px 12px 7px 14px;
-  background: rgba(60, 26, 22, 0.55);
+  background: rgba(20, 30, 70, 0.55);
   border: 0;
   border-left: 2px solid rgba(232, 167, 60, 0.45);
   cursor: pointer;
@@ -322,7 +331,7 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
   font-weight: 800;
   font-size: 14px;
   font-family: var(--font-display);
-  background: linear-gradient(180deg, rgba(15, 6, 7, 0.85), rgba(28, 12, 10, 0.95));
+  background: linear-gradient(180deg, rgba(8, 12, 36, 0.85), rgba(8, 12, 36, 0.95));
   border: 1px solid rgba(232, 167, 60, 0.25);
   border-radius: 8px;
   min-width: 96px;
@@ -355,7 +364,7 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
 
 /* Icon buttons: SVG icons (drawn in HTML), warm bronze outline frame. */
 button.icon-btn {
-  background: linear-gradient(180deg, rgba(60, 26, 22, 0.65), rgba(38, 16, 14, 0.85));
+  background: linear-gradient(180deg, rgba(20, 30, 70, 0.65), rgba(12, 18, 48, 0.85));
   border: 1px solid rgba(232, 167, 60, 0.20);
   border-radius: 8px;
   padding: 6px;
@@ -366,7 +375,7 @@ button.icon-btn {
 }
 button.icon-btn svg { width: 18px; height: 18px; display: block; }
 button.icon-btn:hover:not(:disabled) {
-  background: linear-gradient(180deg, rgba(90, 42, 36, 0.85), rgba(60, 26, 22, 0.95));
+  background: linear-gradient(180deg, rgba(30, 45, 100, 0.85), rgba(20, 30, 70, 0.95));
   border-color: rgba(232, 167, 60, 0.45);
   color: var(--gold-bright);
 }
@@ -404,7 +413,7 @@ button.icon-btn:hover:not(:disabled) {
   color: var(--ink);
   margin-bottom: 10px;
   padding: 7px 16px;
-  background: rgba(28, 12, 10, 0.85);
+  background: rgba(8, 12, 36, 0.85);
   border: 1px solid rgba(232, 167, 60, 0.32);
   border-radius: 999px;
   backdrop-filter: blur(var(--blur));
@@ -431,7 +440,7 @@ button.icon-btn:hover:not(:disabled) {
      consistent with the casino-luxe palette. */
   padding: 10px 26px;
   border-radius: 18px;
-  background: radial-gradient(120% 80% at 50% 50%, rgba(28, 8, 10, 0.65), rgba(28, 8, 10, 0.30) 70%, transparent);
+  background: radial-gradient(120% 80% at 50% 50%, rgba(8, 12, 36, 0.65), rgba(8, 12, 36, 0.30) 70%, transparent);
   text-shadow:
     0 4px 16px rgba(0, 0, 0, 0.95),
     0 2px 4px  rgba(0, 0, 0, 0.85),
@@ -499,7 +508,7 @@ button.icon-btn:hover:not(:disabled) {
 /* Bet panels — leather/wood plaque feel. Warm dark base with a
    hairline brass border + ribbon along the top in the slot accent. */
 .bet-slot {
-  background: linear-gradient(180deg, rgba(38, 16, 14, 0.85), rgba(28, 12, 10, 0.92));
+  background: linear-gradient(180deg, rgba(12, 18, 48, 0.85), rgba(8, 12, 36, 0.92));
   border: 1px solid rgba(232, 167, 60, 0.10);
   border-radius: var(--radius);
   padding: 12px;
@@ -807,9 +816,8 @@ button.icon-btn:hover:not(:disabled) {
    bronze hairline edge. Cashouts get a tier (big/moon) that bumps
    the delta visually. */
 .feed {
-  background: linear-gradient(180deg, rgba(15, 6, 7, 0.85), rgba(21, 9, 10, 0.95));
+  background: linear-gradient(180deg, rgba(8, 12, 36, 0.85), rgba(5, 7, 32, 0.95));
   border-top: 1px solid rgba(232, 167, 60, 0.18);
-  max-height: 30dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -867,7 +875,7 @@ button.icon-btn:hover:not(:disabled) {
   border-radius: 8px;
   align-items: center;
   margin-bottom: 3px;
-  background: rgba(30, 14, 12, 0.55);
+  background: rgba(10, 16, 44, 0.55);
   border: 1px solid rgba(232, 167, 60, 0.06);
   animation: feedIn 280ms var(--easing);
   transition: background 200ms var(--easing), border-color 200ms var(--easing);
@@ -895,7 +903,7 @@ button.icon-btn:hover:not(:disabled) {
   font-weight: 600;
   letter-spacing: 0.01em;
 }
-.feed-list .mult { color: var(--ink-dim); font-size: 11px; }
+.feed-list .mult { color: var(--ink-dim); font-size: 11px; white-space: nowrap; }
 .feed-list .delta {
   font-family: var(--font-display);
   font-weight: 800;
@@ -913,7 +921,7 @@ button.icon-btn:hover:not(:disabled) {
 /* "Me" entries: gold left-rail + warm bronze avatar gradient.
    Stands out among bots so the player tracks themselves. */
 .feed-list li[data-mine="true"] {
-  background: linear-gradient(90deg, rgba(232, 167, 60, 0.18), rgba(30, 14, 12, 0.55) 80%);
+  background: linear-gradient(90deg, rgba(232, 167, 60, 0.18), rgba(10, 16, 44, 0.55) 80%);
   border-color: rgba(232, 167, 60, 0.40);
   border-left: 3px solid var(--gold);
 }
@@ -950,7 +958,7 @@ button.icon-btn:hover:not(:disabled) {
   gap: 10px;
   padding: 10px var(--pad);
   border-top: 1px solid rgba(232, 167, 60, 0.14);
-  background: linear-gradient(180deg, rgba(15, 6, 7, 0.78), rgba(21, 9, 10, 0.92));
+  background: linear-gradient(180deg, rgba(8, 12, 36, 0.78), rgba(5, 7, 32, 0.92));
   backdrop-filter: blur(var(--blur));
   -webkit-backdrop-filter: blur(var(--blur));
 }
@@ -959,7 +967,7 @@ button.icon-btn:hover:not(:disabled) {
   flex-direction: column;
   gap: 2px;
   padding: 8px 10px;
-  background: linear-gradient(180deg, rgba(60, 26, 22, 0.35), rgba(38, 16, 14, 0.55));
+  background: linear-gradient(180deg, rgba(20, 30, 70, 0.35), rgba(12, 18, 48, 0.55));
   border: 1px solid rgba(232, 167, 60, 0.12);
   border-radius: var(--radius-sm);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
@@ -1071,7 +1079,7 @@ button.icon-btn:hover:not(:disabled) {
 #chip-modal { z-index: 110; }
 
 .modal-card {
-  background: linear-gradient(180deg, var(--bg-1), #06081f);
+  background: linear-gradient(180deg, var(--bg-1), #040620);
   border: 1px solid var(--card-border-strong);
   border-radius: var(--radius-lg);
   padding: 24px;
@@ -1223,40 +1231,33 @@ button.icon-btn:hover:not(:disabled) {
   .topbar { padding-left: max(10px, env(safe-area-inset-left));
             padding-right: max(10px, env(safe-area-inset-right)); }
 
-  /* Topbar on mobile — strip the brand to just the eagle SVG + dot
-     and tighten the balance so the history strip gets real estate. */
-  .topbar { gap: 5px; padding-top: 8px; padding-bottom: 8px; }
-  .topbar .brand { font-size: 0; padding-right: 0; gap: 4px; }
+  /* Topbar on mobile — compact but show brand */
+  .topbar { gap: 6px; padding-top: 8px; padding-bottom: 8px; }
   .topbar .brand .brand-mark { width: 20px; height: 15px; }
-  .topbar .brand .brand-text { display: none; }   /* SVG mark + dot only */
   .balance { min-width: 80px; font-size: 12px; }
   .balance-label { padding: 4px 5px; font-size: 8px; letter-spacing: 0.10em; }
   #balance-value { padding: 4px 8px 4px 7px; font-size: 13px; }
   button.icon-btn { padding: 6px; min-width: 32px; min-height: 32px; }
   button.icon-btn svg { width: 16px; height: 16px; }
 
-  .history-strip { -webkit-mask-image: linear-gradient(90deg, transparent, #000 8px, #000 calc(100% - 8px), transparent); }
-  .chip { min-width: 50px; padding: 6px 9px 6px 11px; font-size: 11px; clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%); }
-
-  /* Latest chip on mobile — keep emphasis but fit the slot */
+  /* History strip inside stage — smaller chips on mobile */
+  .history-strip { top: 6px; left: 6px; right: 6px; padding: 4px 6px; gap: 4px; border-radius: 8px; }
+  .chip { min-width: 46px; padding: 5px 8px 5px 10px; font-size: 10px; clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%); }
   .history-strip > .chip:first-child {
-    font-size: 13px;
-    padding: 8px 11px 8px 14px;
-    min-width: 60px;
-    margin-right: 6px;
+    font-size: 12px;
+    padding: 6px 10px 6px 12px;
+    min-width: 56px;
+    margin-right: 4px;
   }
   .history-strip > .chip:first-child::after {
-    font-size: 6px;
-    padding: 1px 4px;
-    top: -3px;
-    right: 3px;
-    letter-spacing: 0.16em;
+    font-size: 5px;
+    padding: 1px 3px;
+    top: -2px;
+    right: 2px;
   }
 
-  /* Stage — sized so the WHOLE page fits in one viewport (no vertical
-     scroll). Bet panels + feed + topbar + econ together need ~470px,
-     so a typical 800-844px phone has ~330px left → stage gets 36dvh. */
-  #app { grid-template-rows: auto minmax(36dvh, 1fr) auto auto auto; }
+  /* Grid: fixed feed height so bet panels never shift */
+  #app { grid-template-rows: auto minmax(0, 1fr) auto auto 10dvh; }
   .stage { min-height: 280px; }
   .multiplier {
     font-size: clamp(64px, 19vw, 110px);
@@ -1320,12 +1321,11 @@ button.icon-btn:hover:not(:disabled) {
   .bet-opt input[type=number] { width: 44px; padding: 3px 4px; font-size: 10px; }
   .bet-opt span { white-space: nowrap; }
 
-  /* Feed: small strip at bottom */
-  .feed { max-height: 14dvh; }
+  /* Feed: fixed-height strip at bottom — never shifts bet panels */
+  .feed { max-height: none; }
   .feed-head { padding: 5px var(--pad); font-size: 10px; }
   .feed-list { padding: 2px 4px; }
-  .feed-list li { grid-template-columns: 22px 1fr auto; gap: 6px; padding: 4px 6px; font-size: 11px; margin-bottom: 1px; }
-  .feed-list .mult { display: none; }
+  .feed-list li { grid-template-columns: 22px 1fr auto auto; gap: 5px; padding: 4px 6px; font-size: 11px; margin-bottom: 1px; }
   .feed-list .avatar { width: 20px; height: 20px; }
   .feed-list .delta { font-size: 11px; padding: 2px 6px; min-width: 44px; }
 

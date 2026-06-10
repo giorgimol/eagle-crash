@@ -171,7 +171,8 @@ function onPhase(msg) {
     // Reset displayed slot statuses for the new round.
     state.bets = { A: null, B: null };
     renderBets();
-    // Clear feed for the new round — keep the empty placeholder ready.
+    // Clear feed + map for the new round.
+    feedMap.clear();
     const ul = $('#feed-list');
     ul.replaceChildren();
     const empty = document.createElement('li');
@@ -229,12 +230,15 @@ function onBet(msg) {
     haptic.light();
     renderBets();
   }
-  pushFeed({
-    name: msg.name, slot: msg.slot,
-    text: `bet ${msg.stake}${msg.autoCashout ? ` @ ${msg.autoCashout.toFixed(2)}x auto` : ''}`,
-    cls: 'pending',
+  const entry = createFeedEntry({
+    playerId: msg.playerId,
+    name: msg.name,
+    slot: msg.slot,
     mine: msg.playerId === state.playerId,
   });
+  entry.actionSpan.textContent = 'bet';
+  entry.deltaSpan.textContent = msg.stake.toFixed(2);
+  entry.deltaSpan.className = 'delta pending';
 }
 
 function onBetCancelled(msg) {
@@ -250,20 +254,28 @@ function onCashout(msg) {
     if (b) { b.status = 'cashed'; b.cashedAt = msg.multiplier; b.payout = msg.payout; }
     renderBets();
     flashCashout(msg.slot, msg.payout - msg.stake);
-    // Milestone vs success: ≥10x is a notable cash-out worth a different
-    // haptic so the player feels the magnitude in their fingertips.
     if (msg.multiplier >= 10) haptic.milestone();
     else                       haptic.success();
     toast(`Cashed out +${(msg.payout - msg.stake).toFixed(2)} at ${msg.multiplier.toFixed(2)}x`, 'win');
   }
-  pushFeed({
-    name: msg.name, slot: msg.slot,
-    text: `cashed @ ${msg.multiplier.toFixed(2)}x`,
+  // Update the existing bet row — no new entry, no duplicate name
+  const updated = updateFeedEntry(msg.playerId, msg.slot, {
+    text: `@ ${msg.multiplier.toFixed(2)}x`,
     deltaText: `+${(msg.payout - msg.stake).toFixed(2)}`,
     cls: 'win',
-    mine: msg.playerId === state.playerId,
     multiplier: msg.multiplier,
+    mine: msg.playerId === state.playerId,
   });
+  if (!updated) {
+    // Fallback if we missed the bet message (e.g. joined mid-round)
+    const entry = createFeedEntry({
+      playerId: msg.playerId, name: msg.name,
+      slot: msg.slot, mine: msg.playerId === state.playerId,
+    });
+    entry.actionSpan.textContent = `@ ${msg.multiplier.toFixed(2)}x`;
+    entry.deltaSpan.textContent = `+${(msg.payout - msg.stake).toFixed(2)}`;
+    entry.deltaSpan.className = 'delta win';
+  }
 }
 
 function onBust(msg) {
@@ -274,13 +286,21 @@ function onBust(msg) {
     haptic.warning();
     toast(`Lost ${msg.stake.toFixed(2)}`, 'loss');
   }
-  pushFeed({
-    name: msg.name, slot: msg.slot,
-    text: `bust`,
+  const updated = updateFeedEntry(msg.playerId, msg.slot, {
+    text: 'bust',
     deltaText: `-${msg.stake.toFixed(2)}`,
     cls: 'loss',
     mine: msg.playerId === state.playerId,
   });
+  if (!updated) {
+    const entry = createFeedEntry({
+      playerId: msg.playerId, name: msg.name,
+      slot: msg.slot, mine: msg.playerId === state.playerId,
+    });
+    entry.actionSpan.textContent = 'bust';
+    entry.deltaSpan.textContent = `-${msg.stake.toFixed(2)}`;
+    entry.deltaSpan.className = 'delta loss';
+  }
 }
 
 function onHistory(msg) {
@@ -515,41 +535,76 @@ function setPhaseLabel(forced) {
 }
 
 // ── Live feed ────────────────────────────────────────────────────────
+// Each player+slot gets ONE row in the feed. When a bet is placed, a
+// "pending" row appears. When the same player cashes out or busts, the
+// existing row updates in-place — no duplicate names.
 
-const FEED_MAX = 60;
+const FEED_MAX = 40;
+const feedMap = new Map(); // "playerId:slot" → { li, actionSpan, deltaSpan }
+
 function initialsFor(name) {
   const trimmed = (name || '?').replace(/[^A-Za-z0-9]/g, '');
   return (trimmed[0] || '?').toUpperCase();
 }
-function pushFeed({ name, slot, text, deltaText, cls, mine = false, multiplier = null }) {
+
+function createFeedEntry({ playerId, name, slot, mine }) {
   const ul = $('#feed-list');
   const empty = ul.querySelector('#feed-empty');
   if (empty) empty.remove();
 
-  const li = document.createElement('li');
-  // Senior casino UX: "me" entries get visual emphasis, and high-multiplier
-  // cashouts get tiered treatment so big wins pop in the feed.
-  if (mine) li.dataset.mine = 'true';
-  if (cls === 'win' && multiplier != null) {
-    if (multiplier >= 25)      li.dataset.tier = 'moon';
-    else if (multiplier >= 5)  li.dataset.tier = 'big';
+  const key = `${playerId}:${slot}`;
+  // If an entry already exists for this key, reuse it (move to top)
+  const existing = feedMap.get(key);
+  if (existing) {
+    ul.prepend(existing.li);
+    return existing;
   }
+
+  const li = document.createElement('li');
+  if (mine) li.dataset.mine = 'true';
 
   const avatar    = document.createElement('span');
   const nameSpan  = document.createElement('span');
-  const multSpan  = document.createElement('span');
+  const actionSpan = document.createElement('span');
   const deltaSpan = document.createElement('span');
   avatar.className = 'avatar';
   avatar.textContent = initialsFor(name);
   nameSpan.className = 'name';
-  nameSpan.textContent = `${name} · ${slot}`;
-  multSpan.className = 'mult';
-  multSpan.textContent = text;
-  deltaSpan.className = `delta ${cls}`;
-  deltaSpan.textContent = deltaText || '';
-  li.append(avatar, nameSpan, multSpan, deltaSpan);
+  nameSpan.textContent = name;
+  actionSpan.className = 'mult';
+  actionSpan.textContent = '';
+  deltaSpan.className = 'delta pending';
+  deltaSpan.textContent = '';
+  li.append(avatar, nameSpan, actionSpan, deltaSpan);
   ul.prepend(li);
+
+  const entry = { li, actionSpan, deltaSpan };
+  feedMap.set(key, entry);
+
   while (ul.children.length > FEED_MAX) ul.removeChild(ul.lastChild);
+  return entry;
+}
+
+function updateFeedEntry(playerId, slot, { text, deltaText, cls, multiplier, mine }) {
+  const key = `${playerId}:${slot}`;
+  const entry = feedMap.get(key);
+  if (!entry) return false;
+
+  entry.actionSpan.textContent = text;
+  entry.deltaSpan.textContent = deltaText || '';
+  entry.deltaSpan.className = `delta ${cls}`;
+
+  // Move updated entry to top so recent actions are visible
+  const ul = $('#feed-list');
+  ul.prepend(entry.li);
+
+  // Clear old tier, apply new
+  delete entry.li.dataset.tier;
+  if (cls === 'win' && multiplier != null) {
+    if (multiplier >= 25)      entry.li.dataset.tier = 'moon';
+    else if (multiplier >= 5)  entry.li.dataset.tier = 'big';
+  }
+  return true;
 }
 
 // ── Cash-out feedback ────────────────────────────────────────────────

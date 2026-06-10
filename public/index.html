@@ -22,9 +22,6 @@
           </svg>
           <span class="brand-text">EAGLE</span>
         </div>
-        <div class="history-strip" id="history-strip" aria-label="Recent crash points">
-          <!-- chips injected by JS -->
-        </div>
         <div class="topbar-right">
           <button id="open-house" class="icon-btn" type="button" title="Operator P&amp;L" aria-label="Operator P&amp;L">
             <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -46,6 +43,9 @@
       <!-- ── Scene ── -->
       <section class="stage">
         <canvas id="scene" width="800" height="500" aria-hidden="true"></canvas>
+        <div class="history-strip" id="history-strip" aria-label="Recent crash points">
+          <!-- chips injected by JS -->
+        </div>
         <div class="stage-overlay">
           <div class="phase-label" id="phase-label" data-phase="connecting">Connecting…</div>
           <div class="multiplier" id="multiplier">1.00x</div>
