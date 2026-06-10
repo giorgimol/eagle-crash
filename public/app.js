@@ -695,6 +695,31 @@ for (const slot of ['A', 'B']) {
   });
 }
 
+// ── Bet B toggle ────────────────────────────────────────────────────
+const betsSection = $('.bets');
+const betSlotB    = $('[data-slot="B"]');
+const addBetBtn   = $('#add-bet-b');
+const closeBetBtn = $('#close-bet-b');
+
+function showBetB() {
+  betSlotB.hidden = false;
+  betsSection.dataset.mode = 'dual';
+}
+
+function hideBetB() {
+  betSlotB.hidden = true;
+  betsSection.dataset.mode = 'single';
+  // Cancel autobet on B if active
+  const abToggle = $('#ab-on-B');
+  if (abToggle.checked) {
+    abToggle.checked = false;
+    send({ type: 'set_autobet', slot: 'B', enabled: false });
+  }
+}
+
+addBetBtn.addEventListener('click', showBetB);
+closeBetBtn.addEventListener('click', hideBetB);
+
 // ── Provably-fair UI ─────────────────────────────────────────────────
 
 // ── Operator P&L modal ──────────────────────────────────────────────

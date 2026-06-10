@@ -69,10 +69,10 @@
       </section>
 
       <!-- ── Bet panels (Smartsoft-style: ± stake, adaptive action) ── -->
-      <section class="bets">
+      <section class="bets" data-mode="single">
         <div class="bet-slot" data-slot="A">
           <div class="bet-head">
-            <span class="bet-title">★ Bet A</span>
+            <span class="bet-title">Bet A</span>
             <span class="bet-status" id="status-A">Ready</span>
           </div>
           <div class="stake-row">
@@ -100,9 +100,15 @@
           </div>
         </div>
 
-        <div class="bet-slot" data-slot="B">
+        <button class="add-bet-btn" id="add-bet-b" type="button" title="Add second bet">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 4v12M4 10h12"/></svg>
+          <span>Bet B</span>
+        </button>
+
+        <div class="bet-slot" data-slot="B" hidden>
           <div class="bet-head">
-            <span class="bet-title">★ Bet B</span>
+            <span class="bet-title">Bet B</span>
+            <button class="bet-close" id="close-bet-b" type="button" aria-label="Remove Bet B">×</button>
             <span class="bet-status" id="status-B">Ready</span>
           </div>
           <div class="stake-row">

@@ -498,12 +498,59 @@ button.icon-btn:hover:not(:disabled) {
 
 .bets {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   padding: 10px var(--pad);
   border-top: 1px solid var(--card-border);
   background: linear-gradient(180deg, transparent, rgba(10, 14, 42, 0.5));
 }
+.bets[data-mode="single"] { grid-template-columns: 1fr auto; }
+.bets[data-mode="dual"]   { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.bets[data-mode="dual"] .add-bet-btn { display: none; }
+
+/* "Add Bet B" button — dashed outline placeholder card */
+.add-bet-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(20, 30, 70, 0.20);
+  border: 2px dashed rgba(232, 167, 60, 0.18);
+  border-radius: var(--radius);
+  color: var(--ink-dim);
+  cursor: pointer;
+  min-width: 56px;
+  padding: 14px 18px;
+  transition: all 200ms var(--easing);
+}
+.add-bet-btn:hover {
+  background: rgba(20, 30, 70, 0.45);
+  border-color: rgba(232, 167, 60, 0.40);
+  color: var(--gold-bright);
+}
+.add-bet-btn svg { width: 24px; height: 24px; }
+.add-bet-btn span {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  font-family: var(--font-display);
+}
+
+/* Close button on Bet B header */
+.bet-close {
+  background: transparent;
+  border: none;
+  color: var(--ink-dim);
+  font-size: 18px;
+  padding: 0 4px;
+  cursor: pointer;
+  line-height: 1;
+  border-radius: 4px;
+  min-width: auto;
+  min-height: auto;
+}
+.bet-close:hover { color: var(--ink); background: rgba(255,255,255,0.08); }
 
 /* Bet panels — leather/wood plaque feel. Warm dark base with a
    hairline brass border + ribbon along the top in the slot accent. */
@@ -541,12 +588,14 @@ button.icon-btn:hover:not(:disabled) {
 .bet-slot.has-bet { border-color: rgba(232, 167, 60, 0.28); }
 .bet-slot[data-slot="A"] .bet-title { color: var(--gold-bright); }
 .bet-slot[data-slot="B"] .bet-title { color: #a3c8df; }
+.bet-slot[hidden] { display: none; }
 
 .bet-head {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 6px;
 }
+.bet-head .bet-status { margin-left: auto; }
 .bet-title {
   font-weight: 700;
   font-size: 13px;
@@ -1289,7 +1338,9 @@ button.icon-btn:hover:not(:disabled) {
 
   /* Bet panels — JetX-style mobile-first compact, 2-col side-by-side.
      ± stake row + 4 presets + ONE big adaptive action + tiny opts. */
-  .bets { gap: 6px; padding: 6px var(--pad); grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bets { gap: 6px; padding: 6px var(--pad); }
+  .bets[data-mode="single"] .add-bet-btn { min-width: 42px; padding: 10px 8px; }
+  .bets[data-mode="single"] .add-bet-btn span { font-size: 8px; }
   .bet-slot { padding: 8px; gap: 6px; border-top-width: 2px; }
   .bet-head { margin-bottom: -2px; }
   .bet-title { font-size: 11px; letter-spacing: 0.04em; }
