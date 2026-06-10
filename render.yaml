@@ -1,0 +1,15 @@
+# Render.com one-click deploy spec.
+# Drop this in the repo root, point Render at the repo, and it picks
+# the runtime + start command automatically.
+
+services:
+  - type: web
+    name: eagle-crash
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 20
