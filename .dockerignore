@@ -1,11 +1,11 @@
 node_modules/
+.git
+.claude
 .DS_Store
 *.log
+*.md
 .env
 .env.local
-dist/
 .idea/
 .vscode/
-# Persisted game state (rounds, GGR, history). Generated at runtime;
-# never commit it — it'd overwrite production state on every deploy.
 server/.state/
