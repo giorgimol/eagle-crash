@@ -755,12 +755,13 @@ export function createScene(canvas) {
       ctx.fillStyle = rgba(cols.middle, 0.42 + cols.t * 0.22);
       ctx.fillRect(0, 0, width, height);
 
-      // Stage darkening — only the bottom half, gradient down. This keeps
-      // the sky bright while giving the hunter + flying eagle clear contrast.
-      const stage = ctx.createLinearGradient(0, height * 0.35, 0, height);
+      // Stage darkening — only the bottom band, gentle gradient. We need
+      // SOME darkening for foreground contrast but the old curve was so
+      // heavy (0.62 black) that it ate the hunter on small stages.
+      const stage = ctx.createLinearGradient(0, height * 0.55, 0, height);
       stage.addColorStop(0,    'rgba(0, 0, 10, 0)');
-      stage.addColorStop(0.55, 'rgba(0, 0, 10, 0.30)');
-      stage.addColorStop(1,    'rgba(0, 0, 10, 0.62)');
+      stage.addColorStop(0.6,  'rgba(0, 0, 10, 0.18)');
+      stage.addColorStop(1,    'rgba(0, 0, 10, 0.38)');
       ctx.fillStyle = stage;
       ctx.fillRect(0, 0, width, height);
     } else {
@@ -832,9 +833,14 @@ export function createScene(canvas) {
     ctx.fillStyle = groundGrad;
     ctx.fillRect(0, height * 0.93, width, height * 0.07);
 
-    // 11) Eagle position + trail
+    // 11) Eagle position + trail.
+    // Scale characters dynamically — on small canvases (mobile) they
+    // need to grow to stay readable; on desktop they stay normal.
+    const adapt = Math.max(1.0, Math.min(1.7, 620 / Math.max(width, 1)));
     const eaglePos  = eagleScreenPos(width, height, mult, state.phase, state.crashElapsed);
-    const hunterPos = { x: width * 0.5, y: height * 0.94 };
+    // Move hunter UP from y=0.94 → 0.88 so he sits above the stage
+    // darkening band and is unmistakably visible.
+    const hunterPos = { x: width * 0.5, y: height * 0.88 };
 
     if (state.phase === 'flying' || state.phase === 'crash_escape') {
       const last = trail[trail.length - 1];
@@ -856,9 +862,22 @@ export function createScene(canvas) {
       if (state.crashElapsed >= 600) eagleRotation = ((state.crashElapsed - 600) / 1000) * Math.PI * 1.5;
     }
 
-    // 13) HUNTER
+    // 13) HUNTER — soft halo behind for legibility, then the silhouette.
+    //     Scale grows on small canvases so he reads on a phone.
+    {
+      const HR = 70 * adapt;
+      const hHalo = ctx.createRadialGradient(hunterPos.x, hunterPos.y - 20, 0, hunterPos.x, hunterPos.y - 20, HR);
+      hHalo.addColorStop(0, rgba(sunCore, 0.30));
+      hHalo.addColorStop(0.5, rgba(sunCore, 0.10));
+      hHalo.addColorStop(1, rgba(sunCore, 0));
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      ctx.fillStyle = hHalo;
+      ctx.fillRect(hunterPos.x - HR, hunterPos.y - HR - 20, HR * 2, HR * 2);
+      ctx.restore();
+    }
     const aim = hunterAimAngle(eaglePos, hunterPos);
-    drawHunter(hunterPos.x, hunterPos.y, aim, recoil, muzzleFlash);
+    drawHunter(hunterPos.x, hunterPos.y, aim, recoil, muzzleFlash, 1.45 * adapt);
 
     // 14) EAGLE — soft halo first (so the silhouette is always legible
     //     against any backdrop), then the rim-lit eagle on top, at a
@@ -878,7 +897,7 @@ export function createScene(canvas) {
       ctx.fillRect(eaglePos.x - HALO_R, eaglePos.y - HALO_R, HALO_R * 2, HALO_R * 2);
       ctx.restore();
 
-      drawEagle(eaglePos.x, eaglePos.y, 1.5, wingPhase, {
+      drawEagle(eaglePos.x, eaglePos.y, 1.5 * adapt, wingPhase, {
         shot: eagleShot,
         rotation: eagleRotation,
         rimLight: rimColor,

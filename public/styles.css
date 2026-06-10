@@ -893,23 +893,25 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
   .history-strip { -webkit-mask-image: linear-gradient(90deg, transparent, #000 8px, #000 calc(100% - 8px), transparent); }
   .chip { min-width: 50px; padding: 7px 10px; font-size: 11px; }
 
-  /* The stage IS the hero — guarantee it real estate on mobile.
-     Previously it was getting squeezed by the bet panels and feed
-     into ~200px, which buried the eagle and trail. Lock it to 44% of
-     the viewport with a generous min so even short phones look right. */
-  #app { grid-template-rows: auto minmax(44dvh, 1fr) auto auto auto; }
-  .stage { min-height: 320px; }
-  .multiplier { font-size: clamp(72px, 22vw, 120px); letter-spacing: -0.03em; }
-  .phase-label { font-size: 10px; padding: 6px 14px; letter-spacing: 0.22em; }
-  .countdown { left: 10px; right: 10px; bottom: 8px; height: 5px; }
+  /* Stage — sized so the WHOLE page fits in one viewport (no vertical
+     scroll). Bet panels + feed + topbar + econ together need ~470px,
+     so a typical 800-844px phone has ~330px left → stage gets 36dvh. */
+  #app { grid-template-rows: auto minmax(36dvh, 1fr) auto auto auto; }
+  .stage { min-height: 280px; }
+  .multiplier {
+    font-size: clamp(64px, 19vw, 110px);
+    letter-spacing: -0.03em;
+    padding: 6px 18px;
+    border-radius: 14px;
+  }
+  .phase-label { font-size: 10px; padding: 5px 12px; letter-spacing: 0.20em; margin-bottom: 6px; }
+  .countdown { left: 10px; right: 10px; bottom: 6px; height: 4px; }
 
-  /* Round economics — collapsed to a single horizontal pill above the
-     bet panels (was a 2-card vertical block eating 80px). One row, both
-     numbers visible at a glance. */
+  /* Round economics — tight horizontal pill above the bet panels */
   .round-econ {
     grid-template-columns: 1fr 1fr;
-    padding: 6px var(--pad);
-    gap: 8px;
+    padding: 5px var(--pad);
+    gap: 6px;
     border-bottom: 0;
     border-top: 1px solid var(--card-border);
     background: rgba(8, 10, 30, 0.55);
@@ -918,30 +920,42 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    padding: 6px 10px;
+    padding: 5px 8px;
+    gap: 6px;
   }
   .econ-label { font-size: 9px; letter-spacing: 0.06em; }
   .econ-value { font-size: 15px; }
 
-  /* Bet panels — keep 2-col but compress everything inside */
-  .bets { gap: 8px; padding: 8px var(--pad); }
-  .bet-slot { padding: 10px; gap: 8px; }
-  .bet-title { font-size: 12px; }
+  /* Bet panels — keep 2-col side-by-side, ULTRA-compact internals so
+     A and B both fit AND the whole page fits in one viewport. */
+  .bets { gap: 6px; padding: 6px var(--pad); }
+  .bet-slot { padding: 8px; gap: 6px; border-top-width: 2px; }
+  .bet-head { margin-bottom: -2px; }
+  .bet-title { font-size: 11px; letter-spacing: 0.04em; }
   .bet-status { font-size: 10px; }
-  .bet-row { gap: 6px; }
-  .bet-quick button { padding: 8px 8px; font-size: 11px; min-width: 36px; min-height: 36px; }
-  .preset-row { gap: 3px; }
-  .preset-row button { padding: 9px 0; font-size: 11px; min-width: 0; min-height: 38px; }
-  .bet-action .place,
-  .bet-action .cashout { padding: 13px 6px; font-size: 14px; min-height: 46px; font-weight: 800; }
-  .bet-opt { font-size: 11px; gap: 6px; padding: 2px 0; }
-  .bet-opt input[type=number] { width: 56px; padding: 6px; font-size: 11px; }
-  input[type=number] { padding: 10px; }
+  .bet-row { gap: 4px; }
+  .bet-row input[type=number] { padding: 8px 8px; font-size: 14px; }
+  .bet-quick { gap: 4px; }
+  .bet-quick button { padding: 6px 6px; font-size: 10px; min-width: 30px; min-height: 32px; }
 
-  /* Feed shrinks to just a strip — important so the bet panels remain
-     above the on-screen keyboard when the user taps a stake input. */
-  .feed { max-height: 18dvh; }
-  .feed-head { padding: 6px var(--pad); font-size: 10px; }
+  /* Presets stay on ONE row by shrinking to fit the column. */
+  .preset-row { gap: 3px; flex-wrap: nowrap; }
+  .preset-row button { flex: 1 1 0; padding: 7px 2px; font-size: 10px; min-width: 0; min-height: 32px; }
+
+  /* Place + Cash Out SIDE BY SIDE — was two stacked rows eating 100px.
+     Now ~42px total. Player still sees both states at all times. */
+  .bet-action { grid-template-columns: 1fr 1fr; gap: 4px; }
+  .bet-action .place,
+  .bet-action .cashout { padding: 10px 4px; font-size: 12px; min-height: 42px; font-weight: 800; border-radius: 8px; }
+
+  /* Auto rows: minimal vertical footprint */
+  .bet-opt { font-size: 10px; gap: 5px; padding: 0; line-height: 1.2; }
+  .bet-opt input[type=checkbox] { width: 13px; height: 13px; flex: 0 0 auto; }
+  .bet-opt input[type=number] { width: 50px; padding: 4px 6px; font-size: 10px; }
+
+  /* Feed: small strip at bottom */
+  .feed { max-height: 14dvh; }
+  .feed-head { padding: 5px var(--pad); font-size: 10px; }
   .feed-list { padding: 2px 4px; }
   .feed-list li { grid-template-columns: 22px 1fr auto; gap: 6px; padding: 4px 6px; font-size: 11px; margin-bottom: 1px; }
   .feed-list .mult { display: none; }
