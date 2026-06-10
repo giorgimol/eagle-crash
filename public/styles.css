@@ -1247,7 +1247,7 @@ button.icon-btn:hover:not(:disabled) {
   :root { --pad: 18px; }
   #app {
     grid-template-columns: minmax(0, 1fr) 340px;
-    grid-template-rows: auto 1fr auto auto;
+    grid-template-rows: auto 1fr auto minmax(0, auto);
     grid-template-areas:
       "top   top"
       "stage feed"
@@ -1255,9 +1255,8 @@ button.icon-btn:hover:not(:disabled) {
       "bets  feed";
   }
   .feed { max-height: none; border-top: 0; border-left: 1px solid var(--card-border); }
-  .bets { grid-template-columns: 1fr 1fr; }
   .multiplier { font-size: clamp(96px, 9vw, 160px); }
-  .stage { min-height: 460px; }
+  .stage { min-height: 0; }
 }
 
 @media (min-width: 1200px) {
