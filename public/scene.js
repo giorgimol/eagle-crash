@@ -147,6 +147,150 @@ export function createScene(canvas) {
     ctx.restore();
   }
 
+  // ── Lamp post — the eagle's perch ───────────────────────────────────
+  // A simple wrought-iron-style lamp. Pole + scroll arm + glowing
+  // lantern. The eagle sits on the lantern during the betting phase
+  // and takes off from there when the round goes live.
+  function drawLampPost(baseX, baseY, height, scale = 1) {
+    ctx.save();
+    ctx.translate(baseX, baseY);
+    ctx.scale(scale, scale);
+
+    const poleH = height;
+    ctx.fillStyle = '#06081a';
+
+    // Base / foot
+    ctx.fillRect(-6, 0, 12, 3);
+    ctx.fillRect(-4, -3, 8, 3);
+
+    // Pole
+    ctx.fillRect(-1.5, -poleH, 3, poleH);
+
+    // Top finial knob
+    ctx.beginPath();
+    ctx.arc(0, -poleH - 2, 3, 0, TWO_PI);
+    ctx.fill();
+
+    // Scroll arm reaching out toward the trail (to the right)
+    ctx.beginPath();
+    ctx.moveTo(0, -poleH + 4);
+    ctx.bezierCurveTo(8, -poleH + 2, 14, -poleH - 4, 14, -poleH - 4);
+    ctx.lineTo(14, -poleH - 7);
+    ctx.bezierCurveTo(10, -poleH - 6, 4, -poleH + 1, 0, -poleH + 1);
+    ctx.closePath();
+    ctx.fill();
+
+    // Lantern body (small house-shaped silhouette)
+    const lx = 14, ly = -poleH - 6;
+    ctx.beginPath();
+    ctx.moveTo(lx - 5, ly);
+    ctx.lineTo(lx + 5, ly);
+    ctx.lineTo(lx + 4, ly + 9);
+    ctx.lineTo(lx - 4, ly + 9);
+    ctx.closePath();
+    ctx.fill();
+    // Lantern roof (tiny triangle on top)
+    ctx.beginPath();
+    ctx.moveTo(lx - 5, ly);
+    ctx.lineTo(lx + 5, ly);
+    ctx.lineTo(lx, ly - 4);
+    ctx.closePath();
+    ctx.fill();
+
+    // Warm lantern glow — small radial bloom around the bulb
+    const glow = ctx.createRadialGradient(lx, ly + 4, 0, lx, ly + 4, 22);
+    glow.addColorStop(0,    'rgba(255, 220, 140, 0.55)');
+    glow.addColorStop(0.45, 'rgba(255, 200, 110, 0.22)');
+    glow.addColorStop(1,    'rgba(255, 200, 110, 0)');
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    ctx.fillStyle = glow;
+    ctx.fillRect(lx - 22, ly - 18, 44, 44);
+    ctx.restore();
+
+    // Bulb glint
+    ctx.fillStyle = 'rgba(255, 235, 180, 0.85)';
+    ctx.beginPath();
+    ctx.ellipse(lx, ly + 4, 1.8, 2.4, 0, 0, TWO_PI);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  // Returns the world-space position of the lantern (top of lamp post,
+  // slightly above the scroll arm). The eagle perches here during
+  // betting and the trail begins from here when the round goes live.
+  function lampPerchPos(width, height) {
+    const baseX = width * 0.10;
+    const baseY = height * 0.92;
+    const poleH = Math.min(70, height * 0.30);
+    // Scale also applies, but for now we use scale=1; perch is at the
+    // top of the lantern body.
+    return { x: baseX + 14, y: baseY - poleH - 2 };
+  }
+
+  // ── Pine tree silhouettes — forest backdrop ─────────────────────────
+  function drawPineTree(x, baseY, h, scale = 1) {
+    ctx.save();
+    ctx.translate(x, baseY);
+    ctx.scale(scale, scale);
+    ctx.fillStyle = '#04060f';
+
+    // Trunk
+    const trunkH = h * 0.18;
+    ctx.fillRect(-1.5, -trunkH, 3, trunkH);
+
+    // Three stacked triangular tiers
+    const tiers = 4;
+    let cy = -trunkH;
+    let curW = h * 0.35;
+    for (let i = 0; i < tiers; i++) {
+      const tH = h * (0.30 - i * 0.04);
+      ctx.beginPath();
+      ctx.moveTo(0, cy - tH);
+      ctx.lineTo(-curW, cy + 2);
+      ctx.lineTo( curW, cy + 2);
+      ctx.closePath();
+      ctx.fill();
+      cy -= tH - 3;
+      curW *= 0.78;
+    }
+    ctx.restore();
+  }
+
+  // Deterministic tree positions (varied heights, on both sides) so
+  // they evoke a forest edge without distracting from the curve.
+  function getTrees(width, height) {
+    return [
+      { x: width * 0.04, baseY: height * 0.965, h: 70 },
+      { x: width * 0.22, baseY: height * 0.965, h: 50 },
+      { x: width * 0.32, baseY: height * 0.965, h: 38 },
+      { x: width * 0.62, baseY: height * 0.965, h: 44 },
+      { x: width * 0.94, baseY: height * 0.965, h: 60 },
+    ];
+  }
+
+  // ── Grass blades along the very bottom ──────────────────────────────
+  function drawGrass(width, height) {
+    ctx.save();
+    ctx.fillStyle = '#03050d';
+    const baseY = height * 0.965;
+    // ~1 blade per 9px so the grass reads as a continuous fringe
+    const blades = Math.ceil(width / 9);
+    for (let i = 0; i < blades; i++) {
+      const x  = i * 9 + pseudoRand(i * 0.71) * 5;
+      const h  = 3 + pseudoRand(i * 1.13) * 8;
+      const sway = Math.sin(performance.now() * 0.0008 + i * 0.4) * 1.5;
+      ctx.beginPath();
+      ctx.moveTo(x - 1.2, baseY);
+      ctx.lineTo(x + sway, baseY - h);
+      ctx.lineTo(x + 1.2, baseY);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
   // ── Hunting dog — small silhouette companion ────────────────────────
   // Side-on dog: body ellipse + head + 4 legs + tail + ears. The eyes
   // are drawn open during betting/flying and the head is slightly
@@ -345,28 +489,27 @@ export function createScene(canvas) {
   function clearTrail() { trail = []; }
 
   // ── Eagle position model ───────────────────────────────────────────
-  // The eagle starts at the BOTTOM-LEFT corner and climbs toward the
-  // upper-right as the multiplier grows. The trail simply records its
-  // path, so the curve naturally rises from the bottom-left edge.
+  // The eagle PERCHES on the lamp post during the betting phase, then
+  // takes off from the lantern when flying begins. The trail therefore
+  // starts at the lantern position (not the bottom of the canvas) and
+  // arcs up toward the upper-right as the multiplier climbs.
   function eagleScreenPos(width, height, mult, phase, crashElapsed) {
-    // Anchor points on the curve. Slight inset so the eagle and trail
-    // don't kiss the canvas edge.
-    const x0 = width  * 0.08;
-    const y0 = height * 0.94;
+    const perch = lampPerchPos(width, height);
+    // End point of the climb — upper-right.
     const x1 = width  * 0.88;
     const y1 = height * 0.12;
 
     const climb = Math.min(1, Math.log(Math.max(1, mult)) / Math.log(20));
-    let x = x0 + (x1 - x0) * climb;
-    // y uses an easing so the curve feels like a true exponential ramp:
-    // gentle at first, then accelerating up.
-    const ey = climb * climb * (3 - 2 * climb);  // smoothstep
-    let y = y0 + (y1 - y0) * ey;
+    let x = perch.x + (x1 - perch.x) * climb;
+    // smoothstep easing so the curve feels exponential — slow off the
+    // perch, then accelerating.
+    const ey = climb * climb * (3 - 2 * climb);
+    let y = perch.y + (y1 - perch.y) * ey;
 
     if (phase === 'betting') {
-      // Sit at the start, breathing.
-      x = x0 + Math.sin(performance.now() * 0.0008) * 6;
-      y = y0 + Math.sin(performance.now() * 0.0014) * 3;
+      // Sit on the lantern, head bob + tiny side sway
+      x = perch.x + Math.sin(performance.now() * 0.0008) * 2;
+      y = perch.y - 4 + Math.sin(performance.now() * 0.0014) * 1.5;
     }
     if (phase === 'crash') {
       if (crashElapsed > 600) {
@@ -443,28 +586,39 @@ export function createScene(canvas) {
     const starAlpha = Math.max(0, (cols.t - 0.35) * 1.4);
     drawStars(width, height, Math.min(0.85, starAlpha), now);
 
-    // 3) Subtle ground gradient at very bottom to anchor the hunter
+    // 3) Subtle ground gradient at very bottom to anchor the foreground
     const ground = ctx.createLinearGradient(0, height * 0.85, 0, height);
     ground.addColorStop(0, 'rgba(0, 0, 0, 0)');
-    ground.addColorStop(1, 'rgba(0, 0, 0, 0.45)');
+    ground.addColorStop(1, 'rgba(0, 0, 0, 0.50)');
     ctx.fillStyle = ground;
     ctx.fillRect(0, 0, width, height);
 
-    // 4) Compute eagle + hunter positions. Hunter now sits at the
-    //    bottom-RIGHT with a small dog companion at his side. The
-    //    trail still rises from bottom-left → upper-right (genre
-    //    convention reads left-to-right), so the eagle flies AWAY
-    //    from the hunter's position.
+    // 4) FOREST — pine tree silhouettes behind everything else. Drawn
+    //    BEFORE the trail so the line sits on top of them, but they
+    //    create a forest edge along the bottom of the stage.
+    for (const t of getTrees(width, height)) {
+      const treeScale = Math.max(0.7, Math.min(1.2, width / 600));
+      drawPineTree(t.x, t.baseY, t.h, treeScale);
+    }
+
+    // 5) Compute character + perch positions
     const eaglePos  = eagleScreenPos(width, height, mult, state.phase, state.crashElapsed);
+    const perch     = lampPerchPos(width, height);
     const hunterPos = { x: width * 0.85, y: height * 0.96 };
     const dogPos    = { x: width * 0.74, y: height * 0.96 };
 
-    // 5) Record the trail: kick off from the bottom-left ANCHOR so the
-    //    curve always begins at the corner, not wherever the eagle was
-    //    last frame.
+    // 6) LAMP POST — drawn before the trail so the line emerges from
+    //    its lantern visually
+    const lampScale = Math.max(0.8, Math.min(1.2, width / 600));
+    const poleH = Math.min(70, height * 0.30);
+    drawLampPost(width * 0.10, height * 0.92, poleH, lampScale);
+
+    // 7) Record the trail. First point is now the LANTERN PERCH — the
+    //    line starts where the eagle was sitting, not at the canvas
+    //    corner. Reads as the bird taking off and trailing fire.
     if (state.phase === 'flying') {
       if (trail.length === 0) {
-        trail.push({ x: width * 0.08, y: height * 0.94 });
+        trail.push({ x: perch.x, y: perch.y });
       }
       const last = trail[trail.length - 1];
       if (Math.abs(last.x - eaglePos.x) + Math.abs(last.y - eaglePos.y) > 2) {
@@ -477,10 +631,10 @@ export function createScene(canvas) {
       if (trail.length > TRAIL_MAX) trail.shift();
     }
 
-    // 6) TRAIL — drawn before characters so they sit on top
+    // 8) TRAIL — drawn over the lamp + forest so the line is on top
     drawTrail(mult);
 
-    // 7) Crash hit
+    // 9) Crash hit
     if (state.phase === 'crash' && !hitTriggered && state.crashElapsed >= 300) {
       hitTriggered = true;
       spawnFeathers(eaglePos.x, eaglePos.y, 16);
@@ -491,16 +645,15 @@ export function createScene(canvas) {
       if (state.crashElapsed >= 600) eagleRotation = ((state.crashElapsed - 600) / 1000) * Math.PI * 1.5;
     }
 
-    // 8) HUNTER + DOG — small silhouettes anchored at bottom-right.
-    //    Both scale gently with canvas size but stay capped so they
-    //    never dominate the trail or multiplier.
+    // 10) HUNTER + DOG — small silhouettes at the bottom-right
     const hScale = Math.max(0.7, Math.min(1.1, width / 700));
     const dScale = hScale * 0.85;
     const aim = hunterAimAngle(eaglePos, hunterPos);
     drawHunter(hunterPos.x, hunterPos.y, aim, recoil, muzzleFlash, hScale);
-    // Dog faces LEFT (toward where the eagle is). default sprite is
-    // left-facing, so facing=1 keeps it that way.
     drawDog(dogPos.x, dogPos.y, dScale, 1);
+
+    // 11) GRASS — front-most foreground layer, gentle sway
+    drawGrass(width, height);
 
     // 9) EAGLE — small at the curve tip, with a soft halo for legibility
     const eScale = Math.max(0.85, Math.min(1.4, width / 600));
