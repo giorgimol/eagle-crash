@@ -1223,14 +1223,35 @@ button.icon-btn:hover:not(:disabled) {
   .topbar { padding-left: max(10px, env(safe-area-inset-left));
             padding-right: max(10px, env(safe-area-inset-right)); }
 
-  /* Topbar tightens; brand shrinks to just the dot + initial */
-  .topbar { gap: 6px; padding-top: 8px; padding-bottom: 8px; }
-  .topbar .brand { font-size: 12px; padding-right: 2px; }
-  .balance { min-width: 0; padding: 7px 10px; font-size: 13px; }
-  .icon-btn { padding: 8px 10px; min-width: 40px; min-height: 40px; font-size: 16px; }
+  /* Topbar on mobile — strip the brand to just the eagle SVG + dot
+     and tighten the balance so the history strip gets real estate. */
+  .topbar { gap: 5px; padding-top: 8px; padding-bottom: 8px; }
+  .topbar .brand { font-size: 0; padding-right: 0; gap: 4px; }
+  .topbar .brand .brand-mark { width: 20px; height: 15px; }
+  .topbar .brand .brand-text { display: none; }   /* SVG mark + dot only */
+  .balance { min-width: 80px; font-size: 12px; }
+  .balance-label { padding: 4px 5px; font-size: 8px; letter-spacing: 0.10em; }
+  #balance-value { padding: 4px 8px 4px 7px; font-size: 13px; }
+  button.icon-btn { padding: 6px; min-width: 32px; min-height: 32px; }
+  button.icon-btn svg { width: 16px; height: 16px; }
 
   .history-strip { -webkit-mask-image: linear-gradient(90deg, transparent, #000 8px, #000 calc(100% - 8px), transparent); }
-  .chip { min-width: 50px; padding: 7px 10px; font-size: 11px; }
+  .chip { min-width: 50px; padding: 6px 9px 6px 11px; font-size: 11px; clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%); }
+
+  /* Latest chip on mobile — keep emphasis but fit the slot */
+  .history-strip > .chip:first-child {
+    font-size: 13px;
+    padding: 8px 11px 8px 14px;
+    min-width: 60px;
+    margin-right: 6px;
+  }
+  .history-strip > .chip:first-child::after {
+    font-size: 6px;
+    padding: 1px 4px;
+    top: -3px;
+    right: 3px;
+    letter-spacing: 0.16em;
+  }
 
   /* Stage — sized so the WHOLE page fits in one viewport (no vertical
      scroll). Bet panels + feed + topbar + econ together need ~470px,
@@ -1412,16 +1433,81 @@ button.icon-btn:hover:not(:disabled) {
 }
 .feed-list li { animation: feedInPremium 280ms var(--easing); }
 
-/* ── Recent rounds (history strip): visual hierarchy ────────────────
-   - Most recent chip gets a glowing ring so the eye lands there first.
-   - Chips fade slightly past the 8th to suggest depth (last 20 visible). */
+/* ── Latest round: distinct hero element ────────────────────────────
+   The most recent crash point is the single most relevant number on
+   the page — players want to know "what just happened" instantly.
+   It gets:
+     - Visibly larger (1.25× scale, +2 font size)
+     - Premium gradient + double border + depth shadow
+     - A tiny "LATEST" pill badge above it
+     - Pop-in animation when a new round lands
+     - Always sits separated from the rest of the strip
+*/
 .history-strip > .chip:first-child {
-  box-shadow: 0 0 12px rgba(255, 213, 107, 0.20);
-  outline: 1px solid rgba(255, 213, 107, 0.40);
-  outline-offset: -1px;
+  font-size: 14px;
+  padding: 10px 16px 10px 18px;
+  min-width: 72px;
+  border-left: 3px solid var(--gold-bright);
+  margin-right: 8px;
+  position: relative;
+  background: linear-gradient(180deg, rgba(232, 167, 60, 0.40), rgba(140, 93, 24, 0.65));
+  color: var(--gold-bright);
+  letter-spacing: 0;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.5), 0 0 14px rgba(244, 198, 104, 0.35);
+  box-shadow:
+    0 4px 14px rgba(0,0,0,0.45),
+    inset 0 1px 0 rgba(255, 224, 152, 0.25);
+  filter: drop-shadow(0 0 8px rgba(244, 198, 104, 0.20));
 }
-.history-strip > .chip:nth-child(n+10) { opacity: 0.78; }
-.history-strip > .chip:nth-child(n+15) { opacity: 0.62; }
+/* Override color-class backgrounds for the first chip so the latest
+   always reads premium-warm regardless of the round outcome */
+.history-strip > .chip.red:first-child {
+  background: linear-gradient(180deg, rgba(227, 91, 80, 0.55), rgba(90, 16, 24, 0.75));
+  color: #ffb3aa;
+  border-left-color: var(--wine-bright);
+}
+.history-strip > .chip.green:first-child {
+  background: linear-gradient(180deg, rgba(109, 210, 138, 0.45), rgba(31, 79, 48, 0.75));
+  color: #c6f5d4;
+  border-left-color: var(--green-bright);
+}
+.history-strip > .chip.gold:first-child {
+  background: linear-gradient(180deg, rgba(244, 198, 104, 0.50), rgba(110, 65, 14, 0.75));
+}
+
+/* The "LATEST" badge above the first chip — small typographic mark
+   that says "this is now" without taking horizontal space. */
+.history-strip > .chip:first-child::after {
+  content: 'LATEST';
+  position: absolute;
+  top: -4px;
+  right: 4px;
+  font-family: var(--font-display);
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: var(--gold-bright);
+  color: #1a0e02;
+  line-height: 1;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
+/* Pop-in animation for new latest round — bounce-scale + opacity */
+@keyframes latestPop {
+  0%   { transform: scale(0.4) translateY(6px); opacity: 0; }
+  60%  { transform: scale(1.18) translateY(0);  opacity: 1; }
+  100% { transform: scale(1);    translateY(0); }
+}
+.history-strip > .chip.new:first-child {
+  animation: latestPop 520ms var(--easing-bounce);
+}
+
+/* Older chips dim progressively so the recency hierarchy is obvious */
+.history-strip > .chip:nth-child(n+8)  { opacity: 0.85; }
+.history-strip > .chip:nth-child(n+14) { opacity: 0.65; }
+.history-strip > .chip:nth-child(n+18) { opacity: 0.45; }
 
 /* Use the premium easing for the most touched transitions */
 button { transition: transform 100ms var(--easing), background 140ms var(--easing), border-color 140ms var(--easing), box-shadow 140ms var(--easing); }
