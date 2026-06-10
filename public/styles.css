@@ -416,6 +416,12 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
   color: var(--ink-dim);
   font-variant-numeric: tabular-nums;
   font-weight: 600;
+  /* Don't let the live multiplier text wrap to a 2nd line — that
+     would push the rest of the bet panel down between phases. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60%;
 }
 .bet-status.placed { color: var(--gold-bright); }
 .bet-status.cashed { color: var(--green-bright); }
@@ -479,8 +485,12 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
    .place / .cashout / .cashed / .disabled — color and label follow. */
 .primary-action {
   width: 100%;
-  min-height: 50px;
-  padding: 12px 8px;
+  /* Fixed height across every state so the panel never shifts vertically
+     when the button morphs Place → Cash Out → Cashed → Bust. The cashout
+     state needs the most room (big number + sub label) so we lock to
+     that size and let smaller states sit centered with extra padding. */
+  height: 60px;
+  padding: 6px 8px;
   border: 0;
   border-radius: 12px;
   font-family: var(--font-display);
@@ -516,7 +526,7 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
   color: #04140a;
   box-shadow: 0 8px 22px rgba(46, 210, 138, 0.30), 0 1px 0 rgba(255,255,255,0.30) inset;
   animation: cashoutPulse 1.0s ease-in-out infinite;
-  font-size: 26px;
+  font-size: 24px;
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
 }
@@ -1032,12 +1042,14 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
   .preset-row { gap: 3px; flex-wrap: nowrap; }
   .preset-row button { flex: 1 1 0; padding: 7px 2px; font-size: 11px; min-width: 0; min-height: 32px; }
 
-  /* Single adaptive action button — Smartsoft hero */
-  .primary-action { min-height: 50px; font-size: 13px; padding: 8px 6px; border-radius: 10px; }
+  /* Single adaptive action button — Smartsoft hero.
+     Fixed height across ALL states so the panel never grows/shrinks
+     when Place → Cash Out → Cashed. 56px on mobile is sized for the
+     cashout number; other states sit centered with extra padding. */
+  .primary-action { height: 56px; min-height: 56px; font-size: 13px; padding: 6px 6px; border-radius: 10px; }
   .primary-action .sub { font-size: 9px; margin-top: 1px; }
-  /* When cashing out, the live $ amount is the hero — bigger than
-     any other state so the player's eye locks onto the number. */
-  .primary-action.cashout { font-size: 22px; min-height: 56px; }
+  /* The cashout live $ is the hero — visibly bigger than other states. */
+  .primary-action.cashout { font-size: 22px; }
   .primary-action.cashout .sub { font-size: 9px; margin-top: 2px; }
 
   /* Opts row: Auto + Loop side by side, tiny */
