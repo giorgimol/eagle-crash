@@ -116,7 +116,7 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
 
 #app {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto 1fr auto auto auto;
   grid-template-areas:
     "top"
@@ -126,6 +126,14 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
     "feed";
   height: 100dvh;
   max-height: 100dvh;
+  /* Pin the app to the viewport. Without this, grid cells with wide
+     content (e.g. bet panels) can force #app past the viewport width,
+     which makes canvas.clientWidth report the wrong value, which
+     makes everything drawn on canvas (hunter, eagle) render at the
+     wrong scale. This is the single most important constraint. */
+  width: 100%;
+  max-width: 100vw;
+  min-width: 0;
   gap: 0;
 }
 .topbar     { grid-area: top; }
@@ -370,7 +378,7 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
 
 .bets {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   padding: 10px var(--pad);
   border-top: 1px solid var(--card-border);
@@ -417,7 +425,7 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
 .bet-status.cashed { color: var(--green-bright); }
 .bet-status.bust   { color: var(--red-bright); }
 
-.bet-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+.bet-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
 .bet-quick {
   display: flex;
   gap: 6px;
@@ -448,8 +456,8 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
 }
 .preset-row button:hover { background: var(--bg-2); color: var(--ink); }
 
-.bet-action { display: grid; grid-template-columns: 1fr; gap: 8px; }
-.bet-action.dual { grid-template-columns: 1fr 1fr; }
+.bet-action { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.bet-action.dual { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
 .bet-action .place {
   background: linear-gradient(180deg, var(--gold-bright), var(--gold));
@@ -609,7 +617,7 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
 
 .round-econ {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   padding: 10px var(--pad);
   border-top: 1px solid var(--card-border);
@@ -850,7 +858,7 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
 @media (min-width: 900px) {
   :root { --pad: 18px; }
   #app {
-    grid-template-columns: 1fr 340px;
+    grid-template-columns: minmax(0, 1fr) 340px;
     grid-template-rows: auto 1fr auto auto;
     grid-template-areas:
       "top   top"
@@ -866,7 +874,7 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
 
 @media (min-width: 1200px) {
   #app {
-    grid-template-columns: 1fr 380px;
+    grid-template-columns: minmax(0, 1fr) 380px;
   }
 }
 
@@ -909,7 +917,7 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
 
   /* Round economics — tight horizontal pill above the bet panels */
   .round-econ {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     padding: 5px var(--pad);
     gap: 6px;
     border-bottom: 0;
@@ -928,7 +936,7 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
 
   /* Bet panels — keep 2-col side-by-side, ULTRA-compact internals so
      A and B both fit AND the whole page fits in one viewport. */
-  .bets { gap: 6px; padding: 6px var(--pad); }
+  .bets { gap: 6px; padding: 6px var(--pad); grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .bet-slot { padding: 8px; gap: 6px; border-top-width: 2px; }
   .bet-head { margin-bottom: -2px; }
   .bet-title { font-size: 11px; letter-spacing: 0.04em; }
@@ -944,7 +952,7 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
 
   /* Place + Cash Out SIDE BY SIDE — was two stacked rows eating 100px.
      Now ~42px total. Player still sees both states at all times. */
-  .bet-action { grid-template-columns: 1fr 1fr; gap: 4px; }
+  .bet-action { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
   .bet-action .place,
   .bet-action .cashout { padding: 10px 4px; font-size: 12px; min-height: 42px; font-weight: 800; border-radius: 8px; }
 

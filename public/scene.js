@@ -126,6 +126,12 @@ export function createScene(canvas) {
   }
   resize();
   window.addEventListener('resize', resize);
+  // CSS-driven size changes (e.g. layout reflow from a media query or
+  // a parent grid recalculating) don't fire window.resize. Watch the
+  // canvas itself so we never run a frame with a stale clientWidth.
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(resize).observe(canvas);
+  }
 
   // ── Helpers ─────────────────────────────────────────────────────────
   function makeGrainTexture(size) {
