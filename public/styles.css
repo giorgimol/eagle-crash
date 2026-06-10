@@ -101,7 +101,7 @@ button {
   transition: transform 100ms ease, background 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
   font-weight: 600;
 }
-button:hover:not(:disabled) { background: rgba(60, 78, 140, 0.70); border-color: var(--card-border-strong); }
+button:hover:not(:disabled):not(.primary-action) { background: rgba(60, 78, 140, 0.70); border-color: var(--card-border-strong); }
 button:active:not(:disabled) { transform: scale(0.97); }
 button:disabled { opacity: 0.40; cursor: not-allowed; }
 button:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
