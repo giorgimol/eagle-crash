@@ -82,6 +82,20 @@ export class Game extends EventEmitter {
     this._tickHandle = null;
     this._phaseHandle = null;
     this._started = false;
+
+    // Operator economics (the casino's view).
+    // Includes BOTH real players AND bots — bots are cosmetic in terms
+    // of the crash math, but their bets+payouts make the operator
+    // numbers reflect what a real lobby of similar volume would look
+    // like. The client UI tags this clearly.
+    this.operator = {
+      rounds: 0,
+      wagered: 0,
+      paidOut: 0,
+      sessionStart: this._now(),
+      lastRound: null,
+    };
+    this._curRound = { wagered: 0, paidOut: 0, bets: 0, playerIds: new Set() };
   }
 
   // ── Lifecycle ───────────────────────────────────────────────────────────
@@ -141,6 +155,7 @@ export class Game extends EventEmitter {
       history: this.history.slice(),
       player: p && this._publicPlayer(p),
       totals: this._roundTotals(),
+      operator: this.operatorSnapshot(),
     };
   }
 
@@ -161,16 +176,36 @@ export class Game extends EventEmitter {
   }
 
   _roundTotals() {
-    let players = 0;
-    let wagered = 0;
-    for (const p of this.players.values()) {
-      const a = p.bets.A;
-      const b = p.bets.B;
-      if (a) { players += 1; wagered += a.stake; }
-      if (b && !a) players += 1;
-      if (b) wagered += b.stake;
-    }
-    return { players, wagered: round2(wagered) };
+    return {
+      players: this._curRound.playerIds.size,
+      wagered: round2(this._curRound.wagered),
+      paidOut: round2(this._curRound.paidOut),
+    };
+  }
+
+  operatorSnapshot() {
+    const cum = this.operator;
+    const sessionMs = this._now() - cum.sessionStart;
+    const ggr = round2(cum.wagered - cum.paidOut);
+    return {
+      cumulative: {
+        rounds:   cum.rounds,
+        wagered:  round2(cum.wagered),
+        paidOut:  round2(cum.paidOut),
+        ggr,
+        rtp:      cum.wagered > 0 ? cum.paidOut / cum.wagered : 0,
+        houseEdge: cum.wagered > 0 ? 1 - (cum.paidOut / cum.wagered) : 0,
+        sessionStart: cum.sessionStart,
+        sessionMs,
+      },
+      lastRound: cum.lastRound,
+      curRound: {
+        wagered: round2(this._curRound.wagered),
+        paidOut: round2(this._curRound.paidOut),
+        bets:    this._curRound.bets,
+        players: this._curRound.playerIds.size,
+      },
+    };
   }
 
   // ── Player actions ──────────────────────────────────────────────────────
@@ -191,6 +226,11 @@ export class Game extends EventEmitter {
     p.balance = round2(p.balance - s);
     p.bets[slot] = { stake: s, autoCashout: ac, status: 'placed', placedAt: this._now() };
 
+    // Operator economics: money in
+    this._curRound.wagered = round2(this._curRound.wagered + s);
+    this._curRound.bets   += 1;
+    this._curRound.playerIds.add(p.id);
+
     this.emit('bet', {
       playerId: p.id, name: p.name, slot, stake: s, autoCashout: ac, isBot: p.isBot,
       balance: p.balance,
@@ -208,6 +248,8 @@ export class Game extends EventEmitter {
 
     p.balance = round2(p.balance + bet.stake);
     p.bets[slot] = null;
+    // Operator economics: refund the wager
+    this._curRound.wagered = round2(this._curRound.wagered - bet.stake);
     this.emit('balance', { playerId: p.id, balance: p.balance });
     this.emit('bet_cancelled', { playerId: p.id, slot });
     return { ok: true };
@@ -258,6 +300,9 @@ export class Game extends EventEmitter {
     bet.payout = payout;
     p.balance = round2(p.balance + payout);
 
+    // Operator economics: money out
+    this._curRound.paidOut = round2(this._curRound.paidOut + payout);
+
     this.emit('cashout', {
       playerId: p.id, name: p.name, slot, multiplier,
       stake: bet.stake, payout, isBot: p.isBot, balance: p.balance,
@@ -281,6 +326,9 @@ export class Game extends EventEmitter {
       p.bets.A = null;
       p.bets.B = null;
     }
+
+    // Reset round economics
+    this._curRound = { wagered: 0, paidOut: 0, bets: 0, playerIds: new Set() };
 
     // Generate this round's commitment up front. Keep serverSeed PRIVATE
     // until the crash phase; broadcast only serverSeedHash + clientSeed + nonce.
@@ -416,6 +464,24 @@ export class Game extends EventEmitter {
     });
     this.emit('crash', { ...revealed });
     this.emit('history', { round: revealed });
+
+    // Finalize operator economics for this round
+    const r = this._curRound;
+    const lastRound = {
+      nonce: revealed.nonce,
+      crashPoint: revealed.crashPoint,
+      escaped:    revealed.escaped,
+      wagered: round2(r.wagered),
+      paidOut: round2(r.paidOut),
+      ggr:     round2(r.wagered - r.paidOut),
+      bets:    r.bets,
+      players: r.playerIds.size,
+    };
+    this.operator.rounds  += 1;
+    this.operator.wagered  = round2(this.operator.wagered + r.wagered);
+    this.operator.paidOut  = round2(this.operator.paidOut + r.paidOut);
+    this.operator.lastRound = lastRound;
+    this.emit('operator', this.operatorSnapshot());
 
     this._phaseHandle = setTimeout(() => this._enterBetting(), CRASH_MS);
   }

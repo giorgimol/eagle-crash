@@ -33,6 +33,8 @@ const state = {
   // crash anim
   crashElapsed: 0,
   crashEscaped: false,
+  // operator P&L
+  operator: null,
 };
 
 // Round-result message accumulator (shown briefly in stage-sub)
@@ -77,6 +79,7 @@ function handleMessage(msg) {
     case 'balance': onBalance(msg); break;
     case 'autobet': onAutobet(msg); break;
     case 'totals':  onTotals(msg);  break;
+    case 'operator': onOperator(msg); break;
     case 'error':   console.warn('[server]', msg.code, msg.message); break;
     default: console.warn('unknown msg', msg);
   }
@@ -104,7 +107,9 @@ function onWelcome(msg) {
   renderBets();
   setPhaseLabel();
   $('#feed-players').textContent = s.totals.players;
-  $('#feed-wagered').textContent = s.totals.wagered;
+  $('#feed-wagered').textContent = s.totals.wagered.toFixed(2);
+  $('#feed-won').textContent     = (s.totals.paidOut ?? 0).toFixed(2);
+  if (s.operator) { state.operator = s.operator; if (!$('#house-modal').hidden) renderHouseModal(); }
 }
 
 function onPhase(msg) {
@@ -240,7 +245,13 @@ function onAutobet(msg) {
 
 function onTotals(msg) {
   $('#feed-players').textContent = msg.players;
-  $('#feed-wagered').textContent = msg.wagered;
+  $('#feed-wagered').textContent = (msg.wagered ?? 0).toFixed(2);
+  $('#feed-won').textContent     = (msg.paidOut ?? 0).toFixed(2);
+}
+
+function onOperator(snap) {
+  state.operator = snap;
+  if (!$('#house-modal').hidden) renderHouseModal();
 }
 
 // ── Render: top bar ──────────────────────────────────────────────────
@@ -459,6 +470,103 @@ for (const slot of ['A', 'B']) {
 
 // ── Provably-fair UI ─────────────────────────────────────────────────
 
+// ── Operator P&L modal ──────────────────────────────────────────────
+
+function fmtMoney(n)   { return Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function fmtMoneyK(n)  {
+  const v = Number(n || 0);
+  if (Math.abs(v) >= 1_000_000) return (v / 1_000_000).toFixed(2) + 'M';
+  if (Math.abs(v) >= 10_000)    return (v / 1_000).toFixed(1) + 'K';
+  return fmtMoney(v);
+}
+function fmtPct(x)     { return (x * 100).toFixed(2) + '%'; }
+function fmtDuration(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const ss = s % 60;
+  return h > 0 ? `${h}h ${m}m ${ss}s` : `${m}m ${ss}s`;
+}
+
+function renderHouseModal() {
+  const snap = state.operator;
+  if (!snap) return;
+  const { cumulative: c, lastRound: lr } = snap;
+
+  $('#op-rounds').textContent  = c.rounds.toLocaleString();
+  $('#op-elapsed').textContent = fmtDuration(c.sessionMs);
+  $('#op-wagered').textContent = fmtMoney(c.wagered);
+  $('#op-paid').textContent    = fmtMoney(c.paidOut);
+  const ggrEl = $('#op-ggr');
+  ggrEl.textContent = fmtMoney(c.ggr);
+  ggrEl.classList.toggle('positive', c.ggr >= 0);
+  ggrEl.classList.toggle('negative', c.ggr <  0);
+  $('#op-edge').textContent    = c.wagered > 0 ? fmtPct(c.houseEdge) : '—';
+  $('#op-rtp').textContent     = c.wagered > 0 ? fmtPct(c.rtp)       : '—';
+  $('#op-avgbet').textContent  = c.rounds > 0 ? fmtMoney(c.wagered / c.rounds) : '0.00';
+
+  if (lr) {
+    $('#op-last-crash').textContent = `${lr.crashPoint.toFixed(2)}x${lr.escaped ? ' (escaped)' : ''}`;
+    $('#op-last-bet').textContent   = fmtMoney(lr.wagered);
+    $('#op-last-paid').textContent  = fmtMoney(lr.paidOut);
+    const last = $('#op-last-ggr');
+    last.textContent = fmtMoney(lr.ggr);
+    last.classList.toggle('positive', lr.ggr >= 0);
+    last.classList.toggle('negative', lr.ggr <  0);
+  }
+
+  renderForecast();
+}
+
+function renderForecast() {
+  const snap = state.operator;
+  if (!snap) return;
+  const c = snap.cumulative;
+
+  const players = Math.max(1, parseFloat($('#calc-players').value)  || 0);
+  const bet     = Math.max(0, parseFloat($('#calc-bet').value)      || 0);
+  const slots   = Math.max(0.1, parseFloat($('#calc-slots').value)  || 0);
+  const hours   = Math.max(1, parseFloat($('#calc-hours').value)    || 0);
+
+  // Round rate observed in the live session — falls back to a known
+  // genre baseline (5s betting + ~15s flying + 3s crash ≈ 23s/round)
+  // until we have enough samples for a reliable empirical rate.
+  let roundsPerHour;
+  if (c.rounds >= 3 && c.sessionMs > 0) {
+    roundsPerHour = (c.rounds / (c.sessionMs / 1000)) * 3600;
+  } else {
+    roundsPerHour = 3600 / 23;
+  }
+
+  // Realized house edge — fallback to design target until we have data.
+  const edge = c.wagered > 0 ? c.houseEdge : 0.03;
+
+  const betsPerRound  = players * slots;
+  const wagerPerRound = betsPerRound * bet;
+  const wagerPerHour  = wagerPerRound * roundsPerHour;
+  const revPerHour    = wagerPerHour * edge;
+  const revPerDay     = revPerHour * hours;
+  const revPerMonth   = revPerDay * 30;
+
+  $('#fc-rounds-hr').textContent = Math.round(roundsPerHour).toLocaleString();
+  $('#fc-wager-hr').textContent  = '$' + fmtMoneyK(wagerPerHour);
+  $('#fc-rev-hr').textContent    = '$' + fmtMoneyK(revPerHour);
+  $('#fc-rev-day').textContent   = '$' + fmtMoneyK(revPerDay);
+  $('#fc-rev-month').textContent = '$' + fmtMoneyK(revPerMonth);
+}
+
+$('#open-house').addEventListener('click', () => {
+  renderHouseModal();
+  $('#house-modal').hidden = false;
+});
+$('#close-house').addEventListener('click', () => closeModal($('#house-modal')));
+$('#house-modal').addEventListener('click', (e) => {
+  if (e.target === $('#house-modal')) closeModal($('#house-modal'));
+});
+for (const id of ['calc-players', 'calc-bet', 'calc-slots', 'calc-hours']) {
+  $('#' + id).addEventListener('input', renderForecast);
+}
+
 $('#open-fair').addEventListener('click', () => {
   populateFairModal();
   $('#fair-modal').hidden = false;
@@ -480,10 +588,12 @@ for (const m of [$('#fair-modal'), $('#chip-modal')]) {
 // ESC dismisses the topmost open modal (chip first since it stacks above).
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
-  const chip = $('#chip-modal');
-  const fair = $('#fair-modal');
+  const chip  = $('#chip-modal');
+  const fair  = $('#fair-modal');
+  const house = $('#house-modal');
   if (!chip.hidden) closeModal(chip);
-  else if (!fair.hidden) closeModal(fair);
+  else if (!fair.hidden)  closeModal(fair);
+  else if (!house.hidden) closeModal(house);
 });
 
 $('#verify-last').addEventListener('click', async () => {

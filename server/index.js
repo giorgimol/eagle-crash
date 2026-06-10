@@ -90,6 +90,7 @@ game.on('bet_cancelled', (e) => broadcast({ type: 'bet_cancelled', ...e }));
 game.on('cashout', (e) => broadcast({ type: 'cashout', ...e }));
 game.on('bust',  (e)   => broadcast({ type: 'bust', ...e }));
 game.on('history', (e) => broadcast({ type: 'history', round: e.round }));
+game.on('operator', (snap) => broadcast({ type: 'operator', ...snap }));
 
 // Per-player balance is private; route it just to that player's socket.
 game.on('balance', ({ playerId, balance }) => {

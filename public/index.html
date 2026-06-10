@@ -18,7 +18,8 @@
           <!-- chips injected by JS -->
         </div>
         <div class="topbar-right">
-          <button id="open-fair" class="icon-btn" type="button" title="Provably Fair" aria-label="Provably Fair">⚖</button>
+          <button id="open-house" class="icon-btn" type="button" title="Operator P&amp;L" aria-label="Operator P&amp;L">💰</button>
+          <button id="open-fair"  class="icon-btn" type="button" title="Provably Fair"  aria-label="Provably Fair">⚖</button>
           <div class="balance" id="balance" aria-label="Balance">
             <span class="coin" aria-hidden="true"></span>
             <span id="balance-value">1000.00</span>
@@ -117,12 +118,69 @@
         <div class="feed-head">
           <span class="live-tag">Live</span>
           <span><strong id="feed-players">0</strong> in round</span>
-          <span><strong id="feed-wagered">0</strong> wagered</span>
+        </div>
+        <div class="round-econ" aria-label="Round economics">
+          <div class="round-econ-row">
+            <span class="econ-label">Round bet</span>
+            <span class="econ-value bet"><span id="feed-wagered">0.00</span></span>
+          </div>
+          <div class="round-econ-row">
+            <span class="econ-label">Round won</span>
+            <span class="econ-value won"><span id="feed-won">0.00</span></span>
+          </div>
         </div>
         <ul class="feed-list" id="feed-list" aria-live="polite">
           <li class="feed-empty" id="feed-empty">Waiting for action…</li>
         </ul>
       </aside>
+    </div>
+
+    <!-- ── Operator P&L modal ── -->
+    <div class="modal" id="house-modal" hidden>
+      <div class="modal-card">
+        <button class="modal-close" id="close-house" type="button" aria-label="Close">×</button>
+        <h2>💰 Operator P&amp;L</h2>
+        <p class="muted small">Live economics from this session plus a forecast calculator. Numbers include the simulated lobby so the volume reflects what a real player base of similar size would produce.</p>
+
+        <h3>Session</h3>
+        <div class="stat-grid">
+          <div class="stat"><div class="stat-k">Rounds played</div>      <div class="stat-v" id="op-rounds">0</div></div>
+          <div class="stat"><div class="stat-k">Time elapsed</div>       <div class="stat-v" id="op-elapsed">—</div></div>
+          <div class="stat"><div class="stat-k">Total wagered</div>      <div class="stat-v" id="op-wagered">0.00</div></div>
+          <div class="stat"><div class="stat-k">Total paid out</div>     <div class="stat-v" id="op-paid">0.00</div></div>
+          <div class="stat"><div class="stat-k">GGR (revenue)</div>      <div class="stat-v positive" id="op-ggr">0.00</div></div>
+          <div class="stat"><div class="stat-k">Realized house edge</div><div class="stat-v" id="op-edge">—</div></div>
+          <div class="stat"><div class="stat-k">Realized RTP</div>       <div class="stat-v" id="op-rtp">—</div></div>
+          <div class="stat"><div class="stat-k">Avg bet / round</div>    <div class="stat-v" id="op-avgbet">0.00</div></div>
+        </div>
+
+        <h3>Last round</h3>
+        <div class="stat-grid" id="op-last">
+          <div class="stat"><div class="stat-k">Crash</div>     <div class="stat-v" id="op-last-crash">—</div></div>
+          <div class="stat"><div class="stat-k">Wagered</div>   <div class="stat-v" id="op-last-bet">0.00</div></div>
+          <div class="stat"><div class="stat-k">Paid out</div>  <div class="stat-v" id="op-last-paid">0.00</div></div>
+          <div class="stat"><div class="stat-k">GGR</div>       <div class="stat-v positive" id="op-last-ggr">0.00</div></div>
+        </div>
+
+        <h3>Forecast calculator</h3>
+        <p class="muted small">Project revenue at a chosen lobby size and bet level. Round rate is taken from the live session (the genre-standard ~1.07/s pacing).</p>
+        <div class="calc-row">
+          <label>Concurrent players <input type="number" id="calc-players" min="1" max="100000" step="1" value="200" /></label>
+          <label>Avg bet per slot   <input type="number" id="calc-bet"     min="0.10" step="0.10" value="5" /></label>
+          <label>Avg slots / player <input type="number" id="calc-slots"   min="0.1" max="2" step="0.1" value="1.1" /></label>
+          <label>Active hours / day <input type="number" id="calc-hours"   min="1" max="24" step="1" value="16" /></label>
+        </div>
+        <div class="forecast-grid">
+          <div class="stat"><div class="stat-k">Rounds / hour</div>   <div class="stat-v" id="fc-rounds-hr">—</div></div>
+          <div class="stat"><div class="stat-k">Wagered / hour</div>  <div class="stat-v" id="fc-wager-hr">—</div></div>
+          <div class="stat"><div class="stat-k">Revenue / hour</div>  <div class="stat-v positive" id="fc-rev-hr">—</div></div>
+          <div class="stat"><div class="stat-k">Revenue / day</div>   <div class="stat-v positive" id="fc-rev-day">—</div></div>
+          <div class="stat"><div class="stat-k">Revenue / month</div> <div class="stat-v positive big" id="fc-rev-month">—</div></div>
+        </div>
+        <p class="muted small disclaimer">
+          Demo math, not a regulator-grade model. Real operators also bear payment processing fees (2–4%), platform/RGS cost (3–6% of GGR), affiliate revshare, marketing, support, and tax. A defensible after-cost margin in this category is typically <strong>~40–55%</strong> of the GGR shown above.
+        </p>
+      </div>
     </div>
 
     <!-- ── Provably-fair modal ── -->

@@ -568,6 +568,113 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
   color: var(--ink-faint);
 }
 
+/* ── Round economics (Bet / Won this round) ──────────────────────── */
+
+.round-econ {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 10px var(--pad);
+  border-bottom: 1px solid var(--card-border);
+}
+.round-econ-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+}
+.econ-label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  font-weight: 600;
+}
+.econ-value {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.econ-value.bet { color: var(--ink); }
+.econ-value.won { color: var(--green-bright); }
+.econ-value.won::before { content: '+'; opacity: 0.7; margin-right: 1px; }
+
+/* ── Operator modal: stat grids and calculator inputs ────────────── */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0;
+}
+.stat {
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+}
+.stat-k {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+.stat-v {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.stat-v.positive { color: var(--green-bright); }
+.stat-v.negative { color: var(--red-bright);   }
+.stat-v.big      { font-size: 22px; }
+
+.calc-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 4px 0 10px;
+}
+.calc-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  font-weight: 600;
+}
+.calc-row input[type=number] {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+}
+.forecast-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-top: 4px;
+}
+.forecast-grid .stat:nth-child(4),
+.forecast-grid .stat:nth-child(5) { grid-column: span 1; }
+.disclaimer {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-left: 2px solid var(--gold);
+  background: rgba(243, 176, 61, 0.06);
+  border-radius: 0 8px 8px 0;
+  line-height: 1.5;
+}
+
 /* ── Modal ───────────────────────────────────────────────────────── */
 
 .modal {
@@ -720,4 +827,100 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
   #app {
     grid-template-columns: 1fr 380px;
   }
+}
+
+/* ── Mobile responsive pass ──────────────────────────────────────────
+   Targeting iPhone SE-class (320px) up through iPhone 15 Pro Max-class
+   (430px). Touch targets ≥ 44×44 per Apple HIG, tighter type, no
+   horizontal overflow, safe-area-inset padding for notched phones.
+*/
+
+@media (max-width: 480px) {
+  :root { --pad: 10px; }
+  body { font-size: 13px; }
+
+  /* Safe-area for notched / Dynamic Island phones */
+  .topbar { padding-left: max(10px, env(safe-area-inset-left));
+            padding-right: max(10px, env(safe-area-inset-right)); }
+
+  /* Topbar tightens; brand shrinks to just the dot + initial */
+  .topbar { gap: 6px; padding-top: 8px; padding-bottom: 8px; }
+  .topbar .brand { font-size: 12px; padding-right: 2px; }
+  .balance { min-width: 0; padding: 6px 10px; font-size: 13px; }
+  .icon-btn { padding: 8px 10px; min-width: 36px; min-height: 36px; }
+
+  .history-strip { -webkit-mask-image: linear-gradient(90deg, transparent, #000 8px, #000 calc(100% - 8px), transparent); }
+  .chip { min-width: 48px; padding: 6px 10px; font-size: 11px; }
+
+  /* Stage gets less vertical room but stays a hero */
+  .stage { min-height: 240px; }
+  .multiplier { font-size: clamp(54px, 18vw, 96px); }
+  .phase-label { font-size: 10px; padding: 5px 12px; letter-spacing: 0.22em; }
+  .countdown { left: 10px; right: 10px; bottom: 8px; height: 5px; }
+
+  /* Bet panels — keep 2-col but compress everything inside */
+  .bets { gap: 8px; padding: 8px var(--pad); }
+  .bet-slot { padding: 10px; gap: 8px; }
+  .bet-title { font-size: 12px; }
+  .bet-status { font-size: 10px; }
+  .bet-row { gap: 6px; }
+  .bet-quick button { padding: 8px 8px; font-size: 11px; min-width: 36px; min-height: 36px; }
+  .preset-row { gap: 3px; }
+  .preset-row button { padding: 8px 0; font-size: 11px; min-width: 0; min-height: 36px; }
+  .bet-action .place,
+  .bet-action .cashout { padding: 12px 6px; font-size: 13px; min-height: 44px; }
+  .bet-opt { font-size: 11px; gap: 6px; }
+  .bet-opt input[type=number] { width: 58px; padding: 6px; }
+  input[type=number] { padding: 10px; }   /* keep input boxes big enough for thumbs */
+
+  /* Round economics card scales down */
+  .round-econ { padding: 8px var(--pad); gap: 6px; }
+  .round-econ-row { padding: 6px 8px; }
+  .econ-value { font-size: 16px; }
+
+  /* Feed: cap height so bet panels stay reachable above the keyboard */
+  .feed { max-height: 26dvh; }
+  .feed-head { padding: 8px var(--pad); font-size: 10px; }
+  .feed-list li { grid-template-columns: 22px 1fr auto; gap: 6px; padding: 5px 6px; font-size: 11px; }
+  .feed-list .mult { display: none; }   /* drop the mid column on narrow screens */
+  .feed-list .avatar { width: 20px; height: 20px; }
+  .feed-list .delta { font-size: 11px; padding: 2px 6px; min-width: 44px; }
+
+  /* Modals fit the viewport edge-to-edge */
+  .modal { padding: 8px; }
+  .modal-card { padding: 16px; border-radius: var(--radius); }
+  .modal-card h2 { font-size: 18px; }
+  .modal-card h3 { font-size: 10px; margin: 14px 0 6px; }
+  .kv { grid-template-columns: 96px 1fr; gap: 4px 10px; }
+  .kv dt, .kv dd { font-size: 11px; }
+  .mono { font-size: 10px; padding: 3px 6px; }
+
+  /* Operator modal */
+  .stat-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .stat { padding: 8px 10px; }
+  .stat-k { font-size: 9px; }
+  .stat-v { font-size: 16px; }
+  .stat-v.big { font-size: 18px; }
+  .calc-row { grid-template-columns: 1fr; gap: 6px; }   /* stack inputs vertically */
+  .forecast-grid { grid-template-columns: 1fr 1fr; }
+  .disclaimer { font-size: 11px; padding: 8px 10px; }
+
+  /* Floater offset above the bet card */
+  .floater { font-size: 17px; }
+}
+
+/* Very narrow phones (≤ 360px) — shave a bit more aggressively */
+@media (max-width: 360px) {
+  .multiplier { font-size: 48px; }
+  .preset-row button { font-size: 10px; padding: 7px 0; }
+  .bet-quick button { padding: 6px 6px; font-size: 10px; }
+  .bet-opt input[type=number] { width: 50px; }
+  .topbar .brand span:last-child { display: none; }   /* hide "EAGLE" text, keep dot */
+}
+
+/* Landscape phones: pull the multiplier up so the bet panel is reachable */
+@media (max-width: 900px) and (orientation: landscape) {
+  .stage { min-height: 180px; }
+  .multiplier { font-size: clamp(48px, 10vw, 80px); }
+  .feed { max-height: 22dvh; }
 }
