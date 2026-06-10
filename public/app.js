@@ -8,6 +8,7 @@
  * - Runs provably-fair verification locally (WebCrypto HMAC-SHA256, mirrors server math).
  */
 import { createScene } from './scene.js';
+import { haptic }      from './haptic.js';
 
 // ── State ─────────────────────────────────────────────────────────────
 
@@ -50,15 +51,58 @@ function connect() {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   const ws = new WebSocket(`${proto}://${location.host}/ws`);
   state.ws = ws;
-  ws.onopen = () => { state.connected = true; setPhaseLabel(); };
+  setConnState('connecting');
+  ws.onopen = () => {
+    state.connected = true;
+    setConnState('live');
+    setPhaseLabel();
+  };
   ws.onclose = () => {
-    state.connected = false; setPhaseLabel('disconnected');
-    setTimeout(connect, 1500); // light reconnect — fine for demo
+    state.connected = false;
+    setConnState('offline');
+    setPhaseLabel('disconnected');
+    setTimeout(connect, 1500);
   };
   ws.onerror = () => { /* swallow; close will fire */ };
   ws.onmessage = (e) => {
     try { handleMessage(JSON.parse(e.data)); } catch (err) { console.error(err); }
   };
+}
+
+// Real-time monitoring guideline: connection status should always be
+// visible. The brand-dot color + tooltip mirrors WS state.
+function setConnState(s) {
+  const brand = document.querySelector('.brand');
+  if (!brand) return;
+  brand.dataset.conn = s;
+  brand.title = s === 'live' ? 'Live · connected'
+              : s === 'connecting' ? 'Connecting…'
+              : 'Offline — reconnecting';
+}
+
+// Toast notifications: brief slide-in confirmation for wins/losses.
+// UX guideline: "confirm successful actions, brief success message."
+function toast(text, kind = 'info') {
+  const stack = document.getElementById('toast-stack')
+              || (() => {
+                  const el = document.createElement('div');
+                  el.id = 'toast-stack';
+                  el.className = 'toast-stack';
+                  document.body.appendChild(el);
+                  return el;
+                })();
+  const t = document.createElement('div');
+  t.className = `toast toast-${kind}`;
+  t.textContent = text;
+  stack.appendChild(t);
+  // Force reflow so the slide-in animation runs from scratch
+  void t.offsetWidth;
+  t.classList.add('show');
+  setTimeout(() => {
+    t.classList.remove('show');
+    t.classList.add('hide');
+    setTimeout(() => t.remove(), 320);
+  }, 2200);
 }
 
 function send(msg) {
@@ -182,12 +226,14 @@ function onBet(msg) {
     state.bets[msg.slot] = {
       stake: msg.stake, autoCashout: msg.autoCashout, status: 'placed',
     };
+    haptic.light();
     renderBets();
   }
   pushFeed({
     name: msg.name, slot: msg.slot,
     text: `bet ${msg.stake}${msg.autoCashout ? ` @ ${msg.autoCashout.toFixed(2)}x auto` : ''}`,
     cls: 'pending',
+    mine: msg.playerId === state.playerId,
   });
 }
 
@@ -204,12 +250,19 @@ function onCashout(msg) {
     if (b) { b.status = 'cashed'; b.cashedAt = msg.multiplier; b.payout = msg.payout; }
     renderBets();
     flashCashout(msg.slot, msg.payout - msg.stake);
+    // Milestone vs success: ≥10x is a notable cash-out worth a different
+    // haptic so the player feels the magnitude in their fingertips.
+    if (msg.multiplier >= 10) haptic.milestone();
+    else                       haptic.success();
+    toast(`Cashed out +${(msg.payout - msg.stake).toFixed(2)} at ${msg.multiplier.toFixed(2)}x`, 'win');
   }
   pushFeed({
     name: msg.name, slot: msg.slot,
     text: `cashed @ ${msg.multiplier.toFixed(2)}x`,
     deltaText: `+${(msg.payout - msg.stake).toFixed(2)}`,
     cls: 'win',
+    mine: msg.playerId === state.playerId,
+    multiplier: msg.multiplier,
   });
 }
 
@@ -218,12 +271,15 @@ function onBust(msg) {
     const b = state.bets[msg.slot];
     if (b) { b.status = 'bust'; }
     renderBets();
+    haptic.warning();
+    toast(`Lost ${msg.stake.toFixed(2)}`, 'loss');
   }
   pushFeed({
     name: msg.name, slot: msg.slot,
     text: `bust`,
     deltaText: `-${msg.stake.toFixed(2)}`,
     cls: 'loss',
+    mine: msg.playerId === state.playerId,
   });
 }
 
@@ -465,12 +521,20 @@ function initialsFor(name) {
   const trimmed = (name || '?').replace(/[^A-Za-z0-9]/g, '');
   return (trimmed[0] || '?').toUpperCase();
 }
-function pushFeed({ name, slot, text, deltaText, cls }) {
+function pushFeed({ name, slot, text, deltaText, cls, mine = false, multiplier = null }) {
   const ul = $('#feed-list');
   const empty = ul.querySelector('#feed-empty');
   if (empty) empty.remove();
 
   const li = document.createElement('li');
+  // Senior casino UX: "me" entries get visual emphasis, and high-multiplier
+  // cashouts get tiered treatment so big wins pop in the feed.
+  if (mine) li.dataset.mine = 'true';
+  if (cls === 'win' && multiplier != null) {
+    if (multiplier >= 25)      li.dataset.tier = 'moon';
+    else if (multiplier >= 5)  li.dataset.tier = 'big';
+  }
+
   const avatar    = document.createElement('span');
   const nameSpan  = document.createElement('span');
   const multSpan  = document.createElement('span');

@@ -6,6 +6,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@800;900&display=swap');
 
 :root {
+  /* Premium easing — "Modern Dark / Cinema Mobile" Expo-out feel.
+     Replaces plain 'ease' across transitions for a more casino-grade
+     motion language. (Source: ui-ux-pro-max-skill styles.csv.) */
+  --easing: cubic-bezier(0.16, 1, 0.3, 1);
+
   /* surface */
   --bg-0:   #050720;
   --bg-1:   #0a0e2a;
@@ -191,7 +196,11 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
   background: var(--green-bright);
   box-shadow: 0 0 10px var(--green-bright);
   animation: pulseDot 1.6s ease-in-out infinite;
+  transition: background 200ms var(--easing), box-shadow 200ms var(--easing);
 }
+/* Connection state: dot recolors to mirror WS state. */
+.brand[data-conn="connecting"] .dot { background: var(--gold-bright); box-shadow: 0 0 10px var(--gold-bright); }
+.brand[data-conn="offline"]    .dot { background: var(--red-bright);  box-shadow: 0 0 10px var(--red-bright); animation: none; opacity: 0.7; }
 @keyframes pulseDot {
   0%, 100% { opacity: 0.55; transform: scale(1); }
   50%      { opacity: 1;    transform: scale(1.25); }
@@ -1107,3 +1116,82 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
   .multiplier { font-size: clamp(48px, 10vw, 80px); }
   .feed { max-height: 22dvh; }
 }
+
+/* ── Toast notifications ─────────────────────────────────────────────
+   Brief confirmations slide in from the top, auto-dismiss after ~2.2s.
+   Safe-area inset honors notch on iOS. UX guideline source:
+   "Confirm successful actions. Brief success message." */
+.toast-stack {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; gap: 6px;
+  pointer-events: none;
+  z-index: 200;
+  max-width: calc(100vw - 24px);
+}
+.toast {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(10, 14, 42, 0.92);
+  border: 1px solid var(--card-border-strong);
+  color: var(--ink);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  white-space: nowrap;
+  transform: translateY(-12px);
+  opacity: 0;
+  transition: transform 280ms var(--easing), opacity 280ms var(--easing);
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.hide { transform: translateY(-8px); opacity: 0; }
+.toast.toast-win  { background: linear-gradient(180deg, rgba(46,210,138,0.95), rgba(20,140,90,0.95)); color: #04140a; border-color: rgba(255,255,255,0.20); }
+.toast.toast-loss { background: linear-gradient(180deg, rgba(255,77,94,0.95),  rgba(160,40,55,0.95)); color: #fff; border-color: rgba(255,255,255,0.20); }
+
+/* ── Live feed: senior casino UX ─────────────────────────────────────
+   - "Me" entries get a subtle gold left-border so the player can spot
+     their own action at a glance.
+   - Wins ≥ 5x get an emphasized delta (slight bg pulse).
+   - Bot avatars stay round; "me" avatar uses gold gradient to differ.
+*/
+.feed-list li[data-mine="true"] {
+  border-left: 2px solid var(--gold);
+  background: linear-gradient(90deg, rgba(243,176,61,0.10), transparent 60%);
+}
+.feed-list li[data-mine="true"] .avatar {
+  background: linear-gradient(135deg, var(--gold-bright), var(--gold-deep));
+  box-shadow: 0 0 10px rgba(255,213,107,0.40);
+}
+.feed-list li[data-tier="big"] .delta {
+  background: linear-gradient(90deg, rgba(46,210,138,0.20), rgba(46,210,138,0.06));
+  box-shadow: 0 0 12px rgba(46,210,138,0.20);
+}
+.feed-list li[data-tier="moon"] .delta {
+  background: linear-gradient(90deg, rgba(243,176,61,0.30), rgba(243,176,61,0.10));
+  color: var(--gold-bright);
+  box-shadow: 0 0 14px rgba(255,213,107,0.40);
+}
+@keyframes feedInPremium {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.feed-list li { animation: feedInPremium 280ms var(--easing); }
+
+/* ── Recent rounds (history strip): visual hierarchy ────────────────
+   - Most recent chip gets a glowing ring so the eye lands there first.
+   - Chips fade slightly past the 8th to suggest depth (last 20 visible). */
+.history-strip > .chip:first-child {
+  box-shadow: 0 0 12px rgba(255, 213, 107, 0.20);
+  outline: 1px solid rgba(255, 213, 107, 0.40);
+  outline-offset: -1px;
+}
+.history-strip > .chip:nth-child(n+10) { opacity: 0.78; }
+.history-strip > .chip:nth-child(n+15) { opacity: 0.62; }
+
+/* Use the premium easing for the most touched transitions */
+button { transition: transform 100ms var(--easing), background 140ms var(--easing), border-color 140ms var(--easing), box-shadow 140ms var(--easing); }
+.chip  { transition: transform 120ms var(--easing), border-color 140ms var(--easing), background 140ms var(--easing); }
