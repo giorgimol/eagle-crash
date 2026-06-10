@@ -516,6 +516,15 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
   color: #04140a;
   box-shadow: 0 8px 22px rgba(46, 210, 138, 0.30), 0 1px 0 rgba(255,255,255,0.30) inset;
   animation: cashoutPulse 1.0s ease-in-out infinite;
+  font-size: 26px;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.primary-action.cashout .sub {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  opacity: 0.78;
+  margin-top: 3px;
 }
 @keyframes cashoutPulse {
   0%, 100% { box-shadow: 0 8px 22px rgba(46, 210, 138, 0.30), 0 1px 0 rgba(255,255,255,0.30) inset; }
@@ -1024,8 +1033,12 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
   .preset-row button { flex: 1 1 0; padding: 7px 2px; font-size: 11px; min-width: 0; min-height: 32px; }
 
   /* Single adaptive action button — Smartsoft hero */
-  .primary-action { min-height: 46px; font-size: 13px; padding: 8px 6px; border-radius: 10px; }
+  .primary-action { min-height: 50px; font-size: 13px; padding: 8px 6px; border-radius: 10px; }
   .primary-action .sub { font-size: 9px; margin-top: 1px; }
+  /* When cashing out, the live $ amount is the hero — bigger than
+     any other state so the player's eye locks onto the number. */
+  .primary-action.cashout { font-size: 22px; min-height: 56px; }
+  .primary-action.cashout .sub { font-size: 9px; margin-top: 2px; }
 
   /* Opts row: Auto + Loop side by side, tiny */
   .bet-opts-row { grid-template-columns: minmax(0, 1fr) auto; gap: 4px; }

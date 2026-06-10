@@ -338,10 +338,12 @@ function renderBets() {
     } else if (isFlying) {
       if (bet && bet.status === 'placed') {
         const projected = (bet.stake * state.multiplier).toFixed(2);
+        // The HUGE live payout is the hero; the action label is the
+        // small line beneath. Player's eye locks onto the number.
         setActionState(action, {
           cls: 'cashout',
-          label: `Cash Out`,
-          sub: projected,
+          label: projected,
+          sub: 'Cash Out',
           act: 'cashout',
         });
       } else if (bet && bet.status === 'cashed') {
