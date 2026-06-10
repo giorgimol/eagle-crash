@@ -147,6 +147,66 @@ export function createScene(canvas) {
     ctx.restore();
   }
 
+  // ── Hunting dog — small silhouette companion ────────────────────────
+  // Side-on dog: body ellipse + head + 4 legs + tail + ears. The eyes
+  // are drawn open during betting/flying and the head is slightly
+  // raised, so the dog reads as alert and watching the bird.
+  function drawDog(x, y, scale = 1, facing = -1) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale * facing, scale);
+
+    // Ground shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.40)';
+    ctx.beginPath();
+    ctx.ellipse(0, 1, 11, 2, 0, 0, TWO_PI);
+    ctx.fill();
+
+    ctx.fillStyle = '#06081a';
+
+    // Front legs
+    ctx.fillRect(-7, -8, 2, 8);
+    ctx.fillRect(-3, -8, 2, 8);
+    // Back legs
+    ctx.fillRect( 3, -8, 2, 8);
+    ctx.fillRect( 7, -8, 2, 8);
+
+    // Body — squat horizontal ellipse
+    ctx.beginPath();
+    ctx.ellipse(0, -10, 10, 5, 0, 0, TWO_PI);
+    ctx.fill();
+
+    // Neck + head — head tilted up, watching
+    ctx.beginPath();
+    ctx.ellipse(-8, -13, 4, 4, 0, 0, TWO_PI);
+    ctx.fill();
+    // Snout
+    ctx.beginPath();
+    ctx.moveTo(-11, -13);
+    ctx.lineTo(-14, -12);
+    ctx.lineTo(-11, -11);
+    ctx.closePath();
+    ctx.fill();
+    // Ear (one drop ear visible side-on)
+    ctx.beginPath();
+    ctx.moveTo(-7, -16);
+    ctx.lineTo(-5, -15);
+    ctx.lineTo(-6, -12);
+    ctx.closePath();
+    ctx.fill();
+
+    // Tail, slightly raised — animated breathing
+    const tailWag = Math.sin(performance.now() * 0.006) * 1.5;
+    ctx.beginPath();
+    ctx.moveTo(9, -11);
+    ctx.lineTo(14, -13 + tailWag);
+    ctx.lineTo(13, -10 + tailWag);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+  }
+
   // ── Hunter — small silhouette at the bottom edge ────────────────────
   function drawHunter(x, y, aimAngle, recoil = 0, muzzleFlash = 0, scale = 1) {
     ctx.save();
@@ -250,9 +310,10 @@ export function createScene(canvas) {
   // every position the eagle has visited this round.
   function drawTrail(mult) {
     if (trail.length < 2) return;
-    const lineWidth = 3 + Math.min(7, Math.log(mult) * 1.4);
+    // Thinner baseline so the curve feels precise instead of painted.
+    // Was 3 + log(mult)*1.4 (up to ~10px core); now ~1.5–4px core.
+    const lineWidth = 1.5 + Math.min(2.5, Math.log(mult) * 0.6);
     const t = Math.min(1, Math.log(mult) / Math.log(20));
-    // Gold → warm orange → hot red as the multiplier climbs.
     const r = Math.round(220 + t * 35);
     const g = Math.round(170 + (1 - t) * 30);
     const b = Math.round(60  + (1 - t) * 50);
@@ -265,14 +326,9 @@ export function createScene(canvas) {
     path.moveTo(trail[0].x, trail[0].y);
     for (let i = 1; i < trail.length; i++) path.lineTo(trail[i].x, trail[i].y);
 
-    // Outer glow
-    ctx.strokeStyle = `rgba(${r},${g},${b},0.30)`;
-    ctx.lineWidth = lineWidth * 4;
-    ctx.stroke(path);
-
-    // Mid bloom
-    ctx.strokeStyle = `rgba(${r},${g + 30},${b + 20},0.75)`;
-    ctx.lineWidth = lineWidth * 1.7;
+    // Outer glow — slimmer
+    ctx.strokeStyle = `rgba(${r},${g},${b},0.28)`;
+    ctx.lineWidth = lineWidth * 3.5;
     ctx.stroke(path);
 
     // Core
@@ -280,9 +336,9 @@ export function createScene(canvas) {
     ctx.lineWidth = lineWidth;
     ctx.stroke(path);
 
-    // Bright inner highlight
-    ctx.strokeStyle = `rgba(255, 250, 220, 0.85)`;
-    ctx.lineWidth = Math.max(1.2, lineWidth * 0.35);
+    // Bright inner highlight (hair-thin)
+    ctx.strokeStyle = `rgba(255, 250, 220, 0.90)`;
+    ctx.lineWidth = Math.max(0.8, lineWidth * 0.35);
     ctx.stroke(path);
     ctx.restore();
   }
@@ -394,9 +450,14 @@ export function createScene(canvas) {
     ctx.fillStyle = ground;
     ctx.fillRect(0, 0, width, height);
 
-    // 4) Compute eagle + hunter positions
+    // 4) Compute eagle + hunter positions. Hunter now sits at the
+    //    bottom-RIGHT with a small dog companion at his side. The
+    //    trail still rises from bottom-left → upper-right (genre
+    //    convention reads left-to-right), so the eagle flies AWAY
+    //    from the hunter's position.
     const eaglePos  = eagleScreenPos(width, height, mult, state.phase, state.crashElapsed);
-    const hunterPos = { x: width * 0.15, y: height * 0.96 };
+    const hunterPos = { x: width * 0.85, y: height * 0.96 };
+    const dogPos    = { x: width * 0.74, y: height * 0.96 };
 
     // 5) Record the trail: kick off from the bottom-left ANCHOR so the
     //    curve always begins at the corner, not wherever the eagle was
@@ -430,11 +491,16 @@ export function createScene(canvas) {
       if (state.crashElapsed >= 600) eagleRotation = ((state.crashElapsed - 600) / 1000) * Math.PI * 1.5;
     }
 
-    // 8) HUNTER — small, anchored at the bottom-left. Scales gently
-    //    based on canvas size but capped so he never dominates.
+    // 8) HUNTER + DOG — small silhouettes anchored at bottom-right.
+    //    Both scale gently with canvas size but stay capped so they
+    //    never dominate the trail or multiplier.
     const hScale = Math.max(0.7, Math.min(1.1, width / 700));
+    const dScale = hScale * 0.85;
     const aim = hunterAimAngle(eaglePos, hunterPos);
     drawHunter(hunterPos.x, hunterPos.y, aim, recoil, muzzleFlash, hScale);
+    // Dog faces LEFT (toward where the eagle is). default sprite is
+    // left-facing, so facing=1 keeps it that way.
+    drawDog(dogPos.x, dogPos.y, dScale, 1);
 
     // 9) EAGLE — small at the curve tip, with a soft halo for legibility
     const eScale = Math.max(0.85, Math.min(1.4, width / 600));
