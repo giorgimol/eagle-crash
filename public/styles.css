@@ -53,7 +53,12 @@
 }
 
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; height: 100%; overscroll-behavior: none; }
+html, body {
+  margin: 0; padding: 0; height: 100%; overscroll-behavior: none;
+  /* Safety net: nothing should be able to push the page horizontally. */
+  overflow-x: hidden;
+  max-width: 100vw;
+}
 body {
   background:
     radial-gradient(1200px 600px at 30% -10%, rgba(70, 92, 200, 0.18), transparent 60%),
@@ -123,11 +128,33 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
   max-height: 100dvh;
   gap: 0;
 }
-.topbar    { grid-area: top; }
-.stage     { grid-area: stage; }
-.round-econ{ grid-area: econ; }
-.bets      { grid-area: bets; }
-.feed      { grid-area: feed; }
+.topbar     { grid-area: top; }
+.stage      { grid-area: stage; }
+.round-econ { grid-area: econ; }
+.bets       { grid-area: bets; }
+.feed       { grid-area: feed; }
+
+/* ── Overflow safety: any flex/grid child whose content can be wider
+   than its share needs min-width:0 so it actually constrains. Without
+   this, content forces the parent to grow past the viewport and the
+   right edge gets clipped (this was the mobile bug). */
+.history-strip,
+.topbar-right,
+.balance,
+.bet-slot,
+.bet-row,
+.bet-action,
+.bet-quick,
+.preset-row,
+.round-econ,
+.round-econ-row,
+.feed-list,
+.feed-list li,
+.feed-list .name { min-width: 0; }
+.preset-row { flex-wrap: wrap; }       /* presets break to 2 lines instead of forcing overflow */
+.preset-row button,
+.bet-quick button { min-width: 0; }    /* let them shrink under their natural size */
+.bet-slot { overflow: hidden; }        /* belt-and-braces: clip anything stray */
 
 /* ── Top bar ─────────────────────────────────────────────────────── */
 
@@ -271,6 +298,8 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
 .phase-label[data-phase="escape"] { color: var(--gold-bright);  border-color: rgba(255, 213, 107, 0.60); box-shadow: 0 0 16px var(--gold-glow); }
 
 .multiplier {
+  position: relative;
+  z-index: 2;
   font-family: var(--font-display);
   font-size: clamp(64px, 16vw, 140px);
   font-weight: 900;
@@ -278,6 +307,12 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
   line-height: 1;
   color: var(--ink);
   letter-spacing: -0.02em;
+  /* Glass plate behind the number — guarantees contrast against any
+     backdrop (bright cloud, sunset, photo) so the multiplier is the
+     unambiguous hero. */
+  padding: 10px 26px;
+  border-radius: 18px;
+  background: radial-gradient(120% 80% at 50% 50%, rgba(8, 10, 28, 0.55), rgba(8, 10, 28, 0.25) 70%, transparent);
   text-shadow:
     0 4px 16px rgba(0, 0, 0, 0.95),
     0 2px 4px  rgba(0, 0, 0, 0.85),
