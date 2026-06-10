@@ -295,10 +295,31 @@ function setActionState(btn, { cls, label, sub, act, disabled, pulse, flash }) {
   btn.className = `primary-action ${cls}${pulse ? ' pulse' : ''}${flash ? ' flash' : ''}`;
   btn.disabled = !!disabled;
   btn.dataset.act = act || 'none';
+
+  // IMPORTANT: do NOT replace innerHTML on every tick. The cashout
+  // button re-renders 60×/sec during flying. If we rebuild the spans
+  // each tick, a finger touch-down on a span finds a fresh DOM node
+  // by touch-up — the browser doesn't fire 'click' across destroyed
+  // children. The fix: build the two spans ONCE and only update their
+  // textContent. The button keeps the same children, click registers
+  // normally on any tap, including dead-center on the number.
+  let main = btn.firstElementChild;
+  let subEl = btn.lastElementChild;
+  if (!main || !subEl || main === subEl || !main.classList?.contains('btn-main')) {
+    btn.replaceChildren();
+    main  = document.createElement('span');
+    subEl = document.createElement('span');
+    main.className = 'btn-main';
+    subEl.className = 'sub';
+    btn.append(main, subEl);
+  }
+  main.textContent = label;
   if (sub) {
-    btn.innerHTML = `<span>${label}</span><span class="sub">${sub}</span>`;
+    subEl.textContent = sub;
+    subEl.style.display = '';
   } else {
-    btn.textContent = label;
+    subEl.textContent = '';
+    subEl.style.display = 'none';
   }
 }
 
